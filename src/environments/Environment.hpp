@@ -81,6 +81,17 @@ public:
      */    
     virtual void getActiveFeaturesIndices(std::vector<int>& active_feat) = 0;
 
+    /**  @brief This is a direct access to the whole vector of features.
+     * If the features are sparse, it is probably a bad idea to access them this way, that's why, for 
+     * performance' sake, this access is disabled by default.
+     * Some features, however, are more efficiently accessed through the whole vector of features. This is
+     * the case for example for the screen features.
+     * @param feat 
+     */
+    virtual void getRawFeatures(std::vector<FeatureType>& feat){
+        throw std::runtime_error("The raw access to the features is not implemented for the current features in this environment");
+    }
+
     /** 
      * @return an integer representing the number of unique features 
      */

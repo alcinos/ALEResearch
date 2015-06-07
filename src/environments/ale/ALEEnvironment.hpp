@@ -103,12 +103,39 @@ protected:
 };
 
 
+//we now do the same trick to detect if the FeatureComputer class provides a getRawFeatures method
+CREATE_MEMBER_DETECTOR(getRawFeatures)
+
+//first case: it doesn't provide the access. In that case, we just implement a constructor.
+//A call to getRawFeatures() will execute the function defined in the Environment class (which throw an exception rightaway.
+template < typename FeatureComputer, typename = void>
+class raw_ALEEnvironment : public impl_ALEEnvironment<FeatureComputer>
+{
+public:
+    typedef typename FeatureComputer::FeatureType FeatureType;
+    raw_ALEEnvironment(ALEInterface* ale,FeatureComputer* feat) : impl_ALEEnvironment<FeatureComputer>(ale,feat){}
+};
+
+//second case: it does provide the interface. In that case we just forward the call.
+template < typename FeatureComputer>
+class raw_ALEEnvironment<FeatureComputer,typename std::enable_if<
+                                             function_traits::has_getRawFeatures<FeatureComputer,void(std::vector<typename FeatureComputer::FeatureType>&,ALEInterface*)>::value>
+                         ::type> : public impl_ALEEnvironment<FeatureComputer>
+{
+public:
+    typedef typename FeatureComputer::FeatureType FeatureType;
+    raw_ALEEnvironment(ALEInterface* ale,FeatureComputer* feat) : impl_ALEEnvironment<FeatureComputer>(ale,feat){}
+    void getRawFeatures(std::vector<FeatureType>& f){
+        this->m_feat(f,this->m_ale);
+    }
+};
+
 template<typename FeatureComputer>
-class ALEEnvironment : public impl_ALEEnvironment<FeatureComputer>{
+class ALEEnvironment : public raw_ALEEnvironment<FeatureComputer>{
 
 public:
     typedef typename FeatureComputer::FeatureType FeatureType;
-    ALEEnvironment(ALEInterface* ale,FeatureComputer* feat) : impl_ALEEnvironment<FeatureComputer>(ale,feat){}
+    ALEEnvironment(ALEInterface* ale,FeatureComputer* feat) : raw_ALEEnvironment<FeatureComputer>(ale,feat){}
 
     
 

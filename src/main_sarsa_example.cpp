@@ -19,7 +19,9 @@
 #include "agents/baseline/RandomAgent.hpp"
 #include "agents/human/HumanAgent.hpp"
 #include "features/BasicFeatures.hpp"
+#include "features/ScreenFeatures.hpp"
 #include "environments/ale/ALEEnvironment.hpp"
+#include<fstream>
 
 void printBasicInfo(Parameters param){
 	printf("Seed: %d\n", param.getSeed());
@@ -53,6 +55,24 @@ int main(int argc, char** argv){
 	ale.setInt("max_num_frames_per_episode", param.getEpisodeLength());
 
 	ale.loadROM(param.getRomPath().c_str());
+
+    ale.act(PLAYER_A_NOOP);
+    ale.act(PLAYER_A_NOOP);
+    ale.act(PLAYER_A_NOOP);
+    ale.act(PLAYER_A_NOOP);
+    
+    ScreenFeatures ff(&param);
+    vector<uint8_t> p;
+    ff.getRawFeatures(p,&ale);
+    ofstream file("test.pgm");
+    file<<"P2"<<endl;
+    file<<"84 84 255"<<endl;
+    for(const auto& t : p){
+        file<<(int)t<<endl;
+    }
+
+    file.close();
+    
     ALEEnvironment<BasicFeatures> env(&ale,&features);
 
 	//Instantiating the learning algorithm:
