@@ -1,6 +1,6 @@
 net: "dqn_net.prototxt"
 solver_type: ADAGRAD
-momentum: 0.95
+#momentum: 0.95
 #learning rate
 base_lr: 0.00025
 lr_policy: "fixed"

@@ -2,6 +2,7 @@ layers {
   name: "frames_input_layer"
   type: MEMORY_DATA
   top: "frames"
+  top: "discarded"
   memory_data_param {
     batch_size: 32
     channels: 4
@@ -24,9 +25,9 @@ layers {
     }
   }
 }
-layer {
+layers {
   name: "relu1"
-  type: "ReLU"
+  type: RELU
   bottom: "conv1"
   top: "conv1_relu"
 }
@@ -45,9 +46,9 @@ layers {
     }
   }
 }
-layer {
+layers {
   name: "relu2"
-  type: "ReLU"
+  type: RELU
   bottom: "conv2"
   top: "conv2_relu"
 }
@@ -66,9 +67,9 @@ layers {
     }
   }
 }
-layer {
+layers {
   name: "relu3"
-  type: "ReLU"
+  type: RELU
   bottom: "conv3"
   top: "conv3_relu"
 }
@@ -109,6 +110,7 @@ layers {
   name: "target_input_layer"
   type: MEMORY_DATA
   top: "target"
+  top: "discarded2"
   memory_data_param {
     batch_size: 32
     channels: 18
@@ -122,4 +124,10 @@ layers {
   bottom: "q_values"
   bottom: "target"
   top: "loss"
+}
+layers {
+  name: "silence_layer"
+  type: SILENCE
+  bottom: "discarded"
+  bottom: "discarded2"
 }
