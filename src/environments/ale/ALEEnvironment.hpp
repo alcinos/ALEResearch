@@ -36,7 +36,7 @@ public:
 
     virtual void getActiveFeaturesIndices(std::vector<std::pair<int,FeatureType>>& active_feat)
     {
-        this->m_feat->getActiveFeatureIndices(active_feat,m_ale);
+        this->m_feat->getActiveFeaturesIndices(active_feat,m_ale);
     }
 
     //this function makes no sense in that case, so we just return an empty vector
