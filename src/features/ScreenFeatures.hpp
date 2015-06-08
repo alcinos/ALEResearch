@@ -38,6 +38,7 @@ public:
      */
     ScreenFeatures(Parameters *param);
     void getActiveFeaturesIndices(const ALEScreen &screen, const ALERAM &ram, vector<int>& features){};
+    void getActiveFeaturesIndices(vector<pair<int,FeatureType>>& features, ALEInterface* ale){};
     /**
      * Return the number of features returned. In this case, it is the number of pixels, 84*84
      * @param none.
@@ -52,6 +53,8 @@ public:
      * @param ale pointer to the interface of the arcade learning environment
      */
     void getRawFeatures(vector<FeatureType>& features,ALEInterface* ale);
+
+    void getCompleteFeatureVector(const ALEScreen &screen, const ALERAM &ram, vector<FeatureType>& features){};
 };
 
 

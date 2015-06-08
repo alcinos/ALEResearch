@@ -12,6 +12,7 @@
 #include <ale_interface.hpp>
 #include "common/Parameters.hpp"
 #include "agents/rl/qlearning/QLearner.hpp"
+#include "agents/rl/dqn/Dqn.hpp"
 #include "agents/rl/sarsa/SarsaLearner.hpp"
 #include "agents/rl/true_online_sarsa/TrueOnlineSarsaLearner.hpp"
 #include "agents/baseline/ConstantAgent.hpp"
@@ -73,12 +74,12 @@ int main(int argc, char** argv){
 
     file.close();
     
-    ALEEnvironment<BasicFeatures> env(&ale,&features);
+    ALEEnvironment<ScreenFeatures> env(&ale,&ff);
 
 	//Instantiating the learning algorithm:
-	TrueOnlineSarsaLearner<bool> sarsaLearner(env,&param);
+	DqnLearner sarsaLearner(env,&param);
     //Learn a policy:
-    sarsaLearner.learnPolicy(env);
+    //sarsaLearner.learnPolicy(env);
 
     printf("\n\n== Evaluation without Learning == \n\n");
     sarsaLearner.evaluatePolicy(env);

@@ -126,7 +126,7 @@ public:
     typedef typename FeatureComputer::FeatureType FeatureType;
     raw_ALEEnvironment(ALEInterface* ale,FeatureComputer* feat) : impl_ALEEnvironment<FeatureComputer>(ale,feat){}
     void getRawFeatures(std::vector<FeatureType>& f){
-        this->m_feat(f,this->m_ale);
+        this->m_feat->getRawFeatures(f,this->m_ale);
     }
 };
 
