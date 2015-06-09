@@ -22,6 +22,7 @@
 #include "features/BasicFeatures.hpp"
 #include "features/ScreenFeatures.hpp"
 #include "environments/ale/ALEEnvironment.hpp"
+#include "environments/ale/ALE_explore.hpp"
 #include<fstream>
 
 void printBasicInfo(Parameters param){
@@ -61,6 +62,26 @@ int main(int argc, char** argv){
     ale.act(PLAYER_A_NOOP);
     ale.act(PLAYER_A_NOOP);
     ale.act(PLAYER_A_NOOP);
+
+    const ALEScreen &screen = ale.getScreen();
+    vector<vector<int> > img;
+    ofstream file2("test3.pgm");
+    file2<<"P2"<<endl;
+    file2<<screen.width()<<" "<<screen.height()<<" 255"<<endl;
+    Background* background = new Background(&param);
+    for(unsigned int i = 0; i < screen.height(); i++){
+        img.push_back(vector<int>(screen.width(), 0));
+        for(unsigned int j = 0; j < screen.width(); j++){
+            img[i][j] = screen.get(i,j);
+            if((img[i][j]>>1) == (background->getPixel(i,j)>>1)){
+                file2<<0<<endl;
+            }else{
+                file2<<img[i][j]<<endl;
+            }
+        }
+    }
+    file2.close();
+    
     
     ScreenFeatures ff(&param);
     vector<uint8_t> p;
@@ -74,12 +95,13 @@ int main(int argc, char** argv){
 
     file.close();
     
-    ALEEnvironment<ScreenFeatures> env(&ale,&ff);
+    //ALEEnvironment<ScreenFeatures> env(&ale,&ff);
 
+    ALEExplore<BasicFeatures> env(&ale,&features,&param);
 	//Instantiating the learning algorithm:
-	DqnLearner sarsaLearner(env,&param);
+	SarsaLearner sarsaLearner(env,&param);
     //Learn a policy:
-    //sarsaLearner.learnPolicy(env);
+    sarsaLearner.learnPolicy(env);
 
     printf("\n\n== Evaluation without Learning == \n\n");
     sarsaLearner.evaluatePolicy(env);

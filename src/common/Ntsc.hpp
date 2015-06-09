@@ -7,7 +7,8 @@
  *
  *
  */
-
+#ifndef NTSC_H
+#define NTSC_H
 #include <array>
 
 using namespace std;
@@ -78,3 +79,6 @@ constexpr array<uint8_t,256> NtscConversionTableGenerator()
 {
     return TableGenerator(gen_seq<256>());
 }
+
+
+#endif
