@@ -162,7 +162,6 @@ public:
      * @param reward a return parameter which tells the corresponding reward.
      */
     virtual double act(Action action){
-        std::vector<double> r;
         return this->m_ale->act(action);
     }
 
