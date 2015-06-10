@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <math.h>
 
-SarsaLearner::SarsaLearner(Environment<bool>& env, Parameters *param) : RLLearner<bool>(env, param) {
+SarsaLearner::SarsaLearner(Environment<bool>& env, Parameters *param,RLLearner<bool>* off_policy) : RLLearner<bool>(env, param, off_policy) {
 	delta = 0.0;
 	
 	alpha = param->getAlpha();
@@ -195,6 +195,9 @@ void SarsaLearner::learnPolicy(Environment<bool>& env){
 		//Repeat(for each step of episode) until game is over:
 		gettimeofday(&tvBegin, NULL);
 
+        if(offlineLearner){
+            offlineLearner->beginEpisode();
+        }
 		//This also stops when the maximum number of steps per episode is reached
 		while(!env.isTerminal()){
 			reward.clear();
@@ -219,6 +222,10 @@ void SarsaLearner::learnPolicy(Environment<bool>& env){
 					Qnext[i] = 0;
 				}
 			}
+            if(offlineLearner){
+                offlineLearner->stepTaken(F,currentAction,reward[0],Fnext);
+            }
+            
 			//To ensure the learning rate will never increase along
 			//the time, Marc used such approach in his JAIR paper		
 			if (F.size() > maxFeatVectorNorm){

@@ -14,6 +14,9 @@
 
 
 template<typename FeatureType>
+class RLLearner;
+
+template<typename FeatureType>
 class RLLearner : public Agent<FeatureType>{
 	protected:
 		ActionVect actions;
@@ -60,9 +63,30 @@ class RLLearner : public Agent<FeatureType>{
  		*        file and command line.
  		*
 		*/
-    RLLearner(Environment<FeatureType>& env, Parameters *param);
+    RLLearner(Environment<FeatureType>& env, Parameters *param,RLLearner<FeatureType>* off_policy=NULL);
 
-	public:
+
+    RLLearner<FeatureType>* offlineLearner; //in case an other agent is learning offline from another's actions
+
+public:
+    /**This function is used in the scenario where an agent is playing, but we trained off-policy another at the same time. 
+     * It is called when a step is taken by the active agent
+     * Note that by default, an agent is assumed not to provide such a way of being trained.
+     * @param active_features_before description of the state before the action
+     * @param action_taken action taken by the agent 
+     * @param reward reward obtained
+     * @param active_feature_after description of the state after the action
+     */
+    virtual void stepTaken(std::vector<int>& active_features_before,int action_taken,float reward,std::vector<int>& active_feature_after){
+        throw std::runtime_error("this method doesn't support off-line learning");
+    }
+    /**This function is used in the scenario where an agent is playing, but we trained off-policy another at the same time
+     *It is called when a new episode starts (it means implicitly that the previous one has ended).
+     */
+    virtual void beginEpisode(){
+        throw std::runtime_error("this method doesn't support off-line learning");
+    }
+
 	   /**
  		* Pure virtual method that needs to be implemented by any RL agent.
  		*

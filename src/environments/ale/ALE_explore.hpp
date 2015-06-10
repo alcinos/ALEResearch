@@ -11,7 +11,7 @@
 #define ALEEXPL_H
 
 #include "ALEEnvironment.hpp"
-#include<map>
+#include<unordered_map>
 #include<vector>
 #include "../../common/Ntsc.hpp"
 #include "../../common/Parameters.hpp"
@@ -20,7 +20,7 @@ template < typename FeatureComputer>
 class ALEExplore;
 
 static constexpr std::array<uint8_t,256> m_ntsc_to_grayscale = NtscConversionTableGenerator();;
-
+extern int true_reward;
 template < typename FeatureComputer>
 class ALEExplore : public ALEEnvironment<FeatureComputer>
 {
@@ -28,8 +28,14 @@ public:
     ALEExplore(ALEInterface* ale,FeatureComputer* feat, Parameters* param) : ALEEnvironment<FeatureComputer>(ale,feat){back = new Background(param);}
 
     virtual double act(Action action){
-        this->m_ale->getLegalActionSet();
+        int old_lives = this->m_ale->lives();
+        true_reward = this->m_ale->act(action);
         char v = compute_stats();
+        if(this->m_ale->lives()==0)
+            cout<<visit_stats.size()<<" "<<this->m_ale->lives()<<endl;
+        if(old_lives != this->m_ale->lives()){
+            return -100;
+        }
         return max(0.0,1.0 - double(v)/10.0);
     }
 protected:
@@ -40,7 +46,7 @@ protected:
         unsigned char* rawScreen = this->m_ale->getScreen().getArray();
         for(unsigned int i = 0; i < old_height; i++){
             for(unsigned int j = 0; j < old_width; j++){
-                if((rawScreen[i*old_width+j]>>1) == (back->getPixel(i,j)>>1)){
+                if(i<30||(rawScreen[i*old_width+j]>>1) == (back->getPixel(i,j)>>1)){
                     rawScreen[i*old_width+j] = 0;
                 }else{
                     rawScreen[i*old_width+j] = m_ntsc_to_grayscale[ rawScreen[i*old_width+j]];
@@ -88,7 +94,7 @@ protected:
     
 
     Background* back;
-    std::map<std::vector<bool>,char> visit_stats;
+    std::unordered_map<std::vector<bool>,char> visit_stats;
 };
 
 #endif

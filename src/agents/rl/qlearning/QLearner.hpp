@@ -28,7 +28,8 @@ class QLearner : public RLLearner<bool>{
 		vector<vector<double> > e;      //Eligibility trace
 		vector<vector<double> > w;      //Theta, weights vector
 		vector<vector<int> >nonZeroElig;//To optimize the implementation
-		
+
+    unsigned maxFeatSizeSeen;
 		/**
  		* Constructor declared as private to force the user to instantiate QLearner
  		* informing the parameters to learning/execution.
@@ -55,6 +56,7 @@ class QLearner : public RLLearner<bool>{
  		* the rule: e[action][i] = gamma * lambda * e[action][i]. It is possible to also define thresholding.
  		*/
 		void updateReplTrace(int action);
+   
 	public:
     QLearner(Environment<bool>& env, Parameters *param);
 		/**
@@ -80,7 +82,19 @@ class QLearner : public RLLearner<bool>{
 		* Destructor, not necessary in this class.
 		*/
 		~QLearner();
+
+    /**This function is used in the scenario where an agent is playing, but we trained off-policy another at the same time. 
+     * It is called when a step is taken by the active agent
+     * @param active_features_before description of the state before the action
+     * @param action_taken action taken by the agent 
+     * @param reward reward obtained
+     * @param active_feature_after description of the state after the action
+     */
+    virtual void stepTaken(std::vector<int>& active_features_before,int action_taken,float reward,std::vector<int>& active_feature_after);
+    /**This function is used in the scenario where an agent is playing, but we trained off-policy another at the same time
+     *It is called when a new episode starts (it means implicitly that the previous one has ended).
+     */
+    virtual void beginEpisode();
+
 };
-
-
 #endif

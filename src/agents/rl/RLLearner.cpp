@@ -1,5 +1,7 @@
 template<typename FeatureType>
-RLLearner<FeatureType>::RLLearner(Environment<FeatureType>& env, Parameters *param){
+RLLearner<FeatureType>::RLLearner(Environment<FeatureType>& env, Parameters *param,RLLearner<FeatureType>* off_policy):
+    offlineLearner(off_policy)
+{
 	randomActionTaken   = 0;
 
 	gamma               = param->getGamma();
@@ -25,8 +27,12 @@ RLLearner<FeatureType>::RLLearner(Environment<FeatureType>& env, Parameters *par
 template<typename FeatureType>
 int RLLearner<FeatureType>::epsilonGreedy(vector<double> &QValues){
 	randomActionTaken = 0;
-
-	int action = Mathematics::argmax(QValues);
+    
+	int action = 0;
+    if(QValues.size() != 0)
+        action = Mathematics::argmax(QValues);
+    else
+        cerr<<"Error: empty qValues (in epsilonGreedy)"<<endl;
 	//With probability epsilon: a <- random action in A(s)
 	int random = rand();
 	if((random % int(nearbyint(1.0/epsilon))) == 0) {

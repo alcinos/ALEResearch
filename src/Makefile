@@ -2,7 +2,7 @@
 #
 # Author: Marlos C. Machado, Nicolas Carion
 
-CXX := g++
+CXX := clang++
 
 ALE := ../../Arcade-Learning-Environment
 
@@ -20,7 +20,7 @@ EXE := learner
 LDFLAGS := -L$(ALE) -lale -lz -lm -lcaffe -lglog -lgflags
 
 ifeq ($(strip $(USE_SDL)), 1)
-  FLAGS +=  -D__USE_SDL `sdl-config --cflags --libs`
+  CFLAGS +=  -D__USE_SDL `sdl-config --cflags --libs`
   LDFLAGS += -lSDL
 endif
 

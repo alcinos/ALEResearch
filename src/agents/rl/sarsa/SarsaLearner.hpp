@@ -68,7 +68,7 @@ class SarsaLearner : public RLLearner<bool>{
  		*/		
 		void loadWeights();
 	public:
-    SarsaLearner(Environment<bool>& env, Parameters *param);
+    SarsaLearner(Environment<bool>& env, Parameters *param,RLLearner<bool>* off_policy=NULL);
 		/**
  		* Implementation of an agent controller. This implementation is Sarsa(lambda).
  		*

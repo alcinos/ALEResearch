@@ -1,13 +1,13 @@
 /****************************************************************************************
-** Implementation of Q(lambda). It implements Fig. 8.9 (Linear, gradient-descent 
-** Q(lambda)) from the book "R. Sutton and A. Barto; Reinforcement Learning: An 
-** Introduction. 1st edition. 1988."
-** Some updates are made to make it more efficient, as not iterating over all features.
-**
-** TODO: Make it as efficient as possible. 
-** 
-** Author: Marlos C. Machado
-***************************************************************************************/
+ ** Implementation of Q(lambda). It implements Fig. 8.9 (Linear, gradient-descent
+ ** Q(lambda)) from the book "R. Sutton and A. Barto; Reinforcement Learning: An
+ ** Introduction. 1st edition. 1988."
+ ** Some updates are made to make it more efficient, as not iterating over all features.
+ **
+ ** TODO: Make it as efficient as possible.
+ **
+ ** Author: Marlos C. Machado
+ ***************************************************************************************/
 
 #include "../../../common/Mathematics.hpp"
 #include "../../../common/Timer.hpp"
@@ -16,208 +16,278 @@
 #include <math.h>
 
 QLearner::QLearner(Environment<bool>& env, Parameters *param) : RLLearner<bool>(env, param) {
-	delta = 0.0;
-	traceThreshold = param->getTraceThreshold();
-	alpha = param->getAlpha();
-	lambda = param->getLambda();
-	
-	numFeatures = env.getNumberOfFeatures();
-	
-	//Get the number of effective actions:
-	if(param->isMinimalAction()){
-		actions = env.getMinimalActionSet();
-	}
-	else{
-		actions = env.getLegalActionSet();
-	}
-	numActions = actions.size();
-	for(int i = 0; i < numActions; i++){
-		//Initialize Q;
-		Q.push_back(0);
-		Qnext.push_back(0);
-		//Initialize e:
-		e.push_back(vector<double>(numFeatures, 0.0));
-		w.push_back(vector<double>(numFeatures, 0.0));
+    delta = 0.0;
+    traceThreshold = param->getTraceThreshold();
+    alpha = param->getAlpha();
+    lambda = param->getLambda();
 
-		nonZeroElig.push_back(vector<int>());
-	}
+    numFeatures = env.getNumberOfFeatures();
+
+    //Get the number of effective actions:
+    if(param->isMinimalAction()){
+        actions = env.getMinimalActionSet();
+    }
+    else{
+        actions = env.getLegalActionSet();
+    }
+    numActions = actions.size();
+    for(int i = 0; i < numActions; i++){
+        //Initialize Q;
+        Q.push_back(0);
+        Qnext.push_back(0);
+        //Initialize e:
+        e.push_back(vector<double>(numFeatures, 0.0));
+        w.push_back(vector<double>(numFeatures, 0.0));
+
+        nonZeroElig.push_back(vector<int>());
+    }
 }
 
 QLearner::~QLearner(){}
 
 void QLearner::updateReplTrace(int action){
-	//e <- gamma * lambda * e
-	for(unsigned int a = 0; a < nonZeroElig.size(); a++){
-		int numNonZero = 0;
-	 	for(unsigned int i = 0; i < nonZeroElig[a].size(); i++){
-	 		int idx = nonZeroElig[a][i];
-	 		//To keep the trace sparse, if it is
-	 		//less than a threshold it is zero-ed.
-			e[a][idx] = gamma * lambda * e[a][idx];
-			if(e[a][idx] < traceThreshold){
-				e[a][idx] = 0;
-			}
-			else{
-				nonZeroElig[a][numNonZero] = idx;
-		  		numNonZero++;
-			}
-		}
-		nonZeroElig[a].resize(numNonZero);
-	}
+    //e <- gamma * lambda * e
+    for(unsigned int a = 0; a < nonZeroElig.size(); a++){
+        int numNonZero = 0;
+        for(unsigned int i = 0; i < nonZeroElig[a].size(); i++){
+            int idx = nonZeroElig[a][i];
+            //To keep the trace sparse, if it is
+            //less than a threshold it is zero-ed.
+            e[a][idx] = gamma * lambda * e[a][idx];
+            if(e[a][idx] < traceThreshold){
+                e[a][idx] = 0;
+            }
+            else{
+                nonZeroElig[a][numNonZero] = idx;
+                numNonZero++;
+            }
+        }
+        nonZeroElig[a].resize(numNonZero);
+    }
 }
 
 void QLearner::updateQValues(vector<int> &Features,vector<double> &QValues){
-	for(int a = 0; a < numActions; a++){
-		double sumW = 0;
-		for(unsigned int i = 0; i < Features.size(); i++){
-			sumW += w[a][Features[i]];
-		}
-		QValues[a] = sumW;
-	}
+    for(int a = 0; a < numActions; a++){
+        double sumW = 0;
+        for(unsigned int i = 0; i < Features.size(); i++){
+            sumW += w[a][Features[i]];
+        }
+        QValues[a] = sumW;
+    }
 }
 
 void QLearner::sanityCheck(){
-	for(int i = 0; i < numActions; i++){
-		if(Q[i] > 10e7 || Q[i] != Q[i] /*NaN*/){
-			printf("It seems your algorithm diverged!\n");
-			exit(0);
-		}
-	}
+    for(int i = 0; i < numActions; i++){
+        if(Q[i] > 10e7 || Q[i] != Q[i] /*NaN*/){
+            printf("It seems your algorithm diverged!\n");
+            exit(0);
+        }
+    }
 }
 
 void QLearner::learnPolicy(Environment<bool>& env){
-	struct timeval tvBegin, tvEnd, tvDiff;
-	vector<double> reward;
-	double elapsedTime;
-	double cumReward = 0, prevCumReward = 0;
-	unsigned int maxFeatVectorNorm = 1;
-	sawFirstReward = 0; firstReward = 1.0;
+    struct timeval tvBegin, tvEnd, tvDiff;
+    vector<double> reward;
+    double elapsedTime;
+    double cumReward = 0, prevCumReward = 0;
+    unsigned int maxFeatVectorNorm = 1;
+    sawFirstReward = 0; firstReward = 1.0;
 
-	//Repeat (for each episode):
-	int episode, totalNumberFrames = 0;
-	//This is going to be interrupted by the ALE code since I set max_num_frames beforehand
-	for(episode = 0; totalNumberFrames < totalNumberOfFramesToLearn; episode++){ 
-		
-		//We have to clean the traces every episode:
-		for(unsigned int a = 0; a < nonZeroElig.size(); a++){
-			for(unsigned int i = 0; i < nonZeroElig[a].size(); i++){
-				int idx = nonZeroElig[a][i];
-				e[a][idx] = 0.0;
-			}
-			nonZeroElig[a].clear();
-		}
+    //Repeat (for each episode):
+    int episode, totalNumberFrames = 0;
+    //This is going to be interrupted by the ALE code since I set max_num_frames beforehand
+    for(episode = 0; totalNumberFrames < totalNumberOfFramesToLearn; episode++){
 
-		F.clear();
-		env.getActiveFeaturesIndices( F);
-		//To ensure the learning rate will never increase along
-		//the time, Marc used such approach in his JAIR paper		
-		if (F.size() > maxFeatVectorNorm){
-			maxFeatVectorNorm = F.size();
-		}
-		gettimeofday(&tvBegin, NULL);
+        //We have to clean the traces every episode:
+        for(unsigned int a = 0; a < nonZeroElig.size(); a++){
+            for(unsigned int i = 0; i < nonZeroElig[a].size(); i++){
+                int idx = nonZeroElig[a][i];
+                e[a][idx] = 0.0;
+            }
+            nonZeroElig[a].clear();
+        }
 
-		//This also stops when the maximum number of steps per episode is reached
-		while(!env.game_over()){
-			reward.clear();
-			reward.push_back(0.0);
-			reward.push_back(0.0);
-			updateQValues(F, Q);
-			sanityCheck();
+        F.clear();
+        env.getActiveFeaturesIndices( F);
+        //To ensure the learning rate will never increase along
+        //the time, Marc used such approach in his JAIR paper
+        if (F.size() > maxFeatVectorNorm){
+            maxFeatVectorNorm = F.size();
+        }
+        gettimeofday(&tvBegin, NULL);
 
-			//Take action, observe reward and next state:
-			currentAction = epsilonGreedy(Q);
-			act(env, currentAction, reward);
-			cumReward  += reward[1];
+        //This also stops when the maximum number of steps per episode is reached
+        while(!env.game_over()){
+            reward.clear();
+            reward.push_back(0.0);
+            reward.push_back(0.0);
+            updateQValues(F, Q);
+            sanityCheck();
 
-			if(!env.game_over()){
-				//Obtain active featuresy in the new state:
-				Fnext.clear();
-				env.getActiveFeaturesIndices( Fnext);
-				//To ensure the learning rate will never increase along
-				//the time, Marc used such approach in his JAIR paper
-				if (Fnext.size() > maxFeatVectorNorm){
-					maxFeatVectorNorm = Fnext.size();
-				}
-				updateQValues(Fnext, Qnext);     //Update Q-values for the new active features
-				nextAction = Mathematics::argmax(Qnext);
-			}
-			else{
-				nextAction = 0;
-				for(unsigned int i = 0; i < Qnext.size(); i++){
-					Qnext[i] = 0;
-				}
-			}
-			delta = reward[0] + gamma * Qnext[nextAction] - Q[currentAction];
-			
-			if(randomActionTaken) {
-				for(unsigned int a = 0; a < nonZeroElig.size(); a++){
-					for(unsigned int i = 0; i < nonZeroElig[a].size(); i++){
-						int idx = nonZeroElig[a][i];
-						e[a][idx] = 0.0;
-					}
-					nonZeroElig[a].clear();
-				}
-			}
-			else{
-				updateReplTrace(currentAction);
-			}
-			//For all i in Fa:
-			for(unsigned int i = 0; i < F.size(); i++){
-				int idx = F[i];
-				//If the trace is zero it is not in the vector
-				//of non-zeros, thus it needs to be added
-				if(e[currentAction][idx] == 0){
-			       nonZeroElig[currentAction].push_back(idx);
-			    }
-				e[currentAction][idx] = 1;
-			}
+            //Take action, observe reward and next state:
+            currentAction = epsilonGreedy(Q);
+            act(env, currentAction, reward);
+            cumReward  += reward[1];
 
-			//Update weights vector:
-			for(unsigned int a = 0; a < nonZeroElig.size(); a++){
-				for(unsigned int i = 0; i < nonZeroElig[a].size(); i++){
-					int idx = nonZeroElig[a][i];
-					w[a][idx] = w[a][idx] + (alpha/(maxFeatVectorNorm)) * delta * e[a][idx];
-				}
-			}
-			F = Fnext;
-		}
-		gettimeofday(&tvEnd, NULL);
-		timeval_subtract(&tvDiff, &tvEnd, &tvBegin);
-		elapsedTime = double(tvDiff.tv_sec) + double(tvDiff.tv_usec)/1000000.0;
-		
-		double fps = double(env.getEpisodeFrameNumber())/elapsedTime;
-		printf("episode: %d,\t%.0f points,\tavg. return: %.1f,\t%d frames,\t%.0f fps\n",
-			episode + 1, cumReward - prevCumReward, (double)cumReward/(episode + 1.0),
-			env.getEpisodeFrameNumber(), fps);
-		totalNumberFrames += env.getEpisodeFrameNumber();
-		prevCumReward = cumReward;
-		env.reset_game();
-	}
+            if(!env.game_over()){
+                //Obtain active featuresy in the new state:
+                Fnext.clear();
+                env.getActiveFeaturesIndices( Fnext);
+                //To ensure the learning rate will never increase along
+                //the time, Marc used such approach in his JAIR paper
+                if (Fnext.size() > maxFeatVectorNorm){
+                    maxFeatVectorNorm = Fnext.size();
+                }
+                updateQValues(Fnext, Qnext);     //Update Q-values for the new active features
+                nextAction = Mathematics::argmax(Qnext);
+            }
+            else{
+                nextAction = 0;
+                for(unsigned int i = 0; i < Qnext.size(); i++){
+                    Qnext[i] = 0;
+                }
+            }
+            delta = reward[0] + gamma * Qnext[nextAction] - Q[currentAction];
+
+            if(randomActionTaken) {
+                for(unsigned int a = 0; a < nonZeroElig.size(); a++){
+                    for(unsigned int i = 0; i < nonZeroElig[a].size(); i++){
+                        int idx = nonZeroElig[a][i];
+                        e[a][idx] = 0.0;
+                    }
+                    nonZeroElig[a].clear();
+                }
+            }
+            else{
+                updateReplTrace(currentAction);
+            }
+            //For all i in Fa:
+            for(unsigned int i = 0; i < F.size(); i++){
+                int idx = F[i];
+                //If the trace is zero it is not in the vector
+                //of non-zeros, thus it needs to be added
+                if(e[currentAction][idx] == 0){
+                    nonZeroElig[currentAction].push_back(idx);
+                }
+                e[currentAction][idx] = 1;
+            }
+
+            //Update weights vector:
+            for(unsigned int a = 0; a < nonZeroElig.size(); a++){
+                for(unsigned int i = 0; i < nonZeroElig[a].size(); i++){
+                    int idx = nonZeroElig[a][i];
+                    w[a][idx] = w[a][idx] + (alpha/(maxFeatVectorNorm)) * delta * e[a][idx];
+                }
+            }
+            F = Fnext;
+        }
+        gettimeofday(&tvEnd, NULL);
+        timeval_subtract(&tvDiff, &tvEnd, &tvBegin);
+        elapsedTime = double(tvDiff.tv_sec) + double(tvDiff.tv_usec)/1000000.0;
+
+        double fps = double(env.getEpisodeFrameNumber())/elapsedTime;
+        printf("episode: %d,\t%.0f points,\tavg. return: %.1f,\t%d frames,\t%.0f fps\n",
+               episode + 1, cumReward - prevCumReward, (double)cumReward/(episode + 1.0),
+               env.getEpisodeFrameNumber(), fps);
+        totalNumberFrames += env.getEpisodeFrameNumber();
+        prevCumReward = cumReward;
+        env.reset_game();
+    }
 }
 
 void QLearner::evaluatePolicy(Environment<bool>& env){
-	double reward = 0;
-	double cumReward = 0; 
-	double prevCumReward = 0;
+    double reward = 0;
+    double cumReward = 0;
+    double prevCumReward = 0;
 
-	//Repeat (for each episode):
-	for(int episode = 0; episode < numEpisodesEval; episode++){
-		//Repeat(for each step of episode) until game is over:
-		for(int step = 0; !env.game_over() && step < episodeLength; step++){
-			//Get state and features active on that state:		
-			F.clear();
-			env.getActiveFeaturesIndices(F);
-			updateQValues(F, Q);       //Update Q-values for each possible action
-			currentAction = epsilonGreedy(Q);
-			//Take action, observe reward and next state:
-			reward = env.act(actions[currentAction]);
-			cumReward  += reward;
-		}
-		env.reset_game();
-		sanityCheck();
-		
-		printf("%d, %f, %f\n", episode + 1, (double)cumReward/(episode + 1.0), cumReward-prevCumReward);
-		
-		prevCumReward = cumReward;
-	}
+    epsilon = 0;
+
+    ofstream file("weights.bak");
+    file<<w.size()<<" "<<w[0].size()<<endl;
+    for(const auto& l : w){
+        for(const auto& ll: l ){
+            file<<ll<<endl;
+        }
+    }
+    file<<endl;
+    //Repeat (for each episode):
+    for(int episode = 0; episode < numEpisodesEval; episode++){
+        //Repeat(for each step of episode) until game is over:
+        for(int step = 0; !env.game_over() && step < episodeLength; step++){
+            //Get state and features active on that state:
+            F.clear();
+            env.getActiveFeaturesIndices(F);
+            updateQValues(F, Q);       //Update Q-values for each possible action
+            currentAction = epsilonGreedy(Q);
+            //Take action, observe reward and next state:
+            reward = env.act(actions[currentAction]);
+            cumReward  += reward;
+        }
+        env.reset_game();
+        sanityCheck();
+
+        printf("%d, %f, %f\n", episode + 1, (double)cumReward/(episode + 1.0), cumReward-prevCumReward);
+
+        prevCumReward = cumReward;
+    }
+}
+
+
+
+
+void QLearner::beginEpisode()
+{
+    for(unsigned int a = 0; a < nonZeroElig.size(); a++){
+        for(unsigned int i = 0; i < nonZeroElig[a].size(); i++){
+            int idx = nonZeroElig[a][i];
+            e[a][idx] = 0.0;
+        }
+        nonZeroElig[a].clear();
+    }
+    
+}
+extern int true_reward;
+void QLearner::stepTaken(std::vector<int>& active_features_before,int action_taken,float reward,std::vector<int>& active_features_after)
+{
+    maxFeatSizeSeen = max(maxFeatSizeSeen,(unsigned)active_features_after.size());
+    maxFeatSizeSeen = max(maxFeatSizeSeen,(unsigned)active_features_before.size());
+    updateQValues(active_features_before,Q);
+    updateQValues(active_features_after,Qnext);
+    int best_action = -1;
+    if(Q.size()!=0)
+        best_action = Mathematics::argmax(Q);
+    else
+        cerr<<"ERROR : empty Q in stepTaken. feature size : "<<active_features_before.size()<<endl;
+    delta = true_reward + gamma * Qnext[best_action] - Q[currentAction];
+    if(action_taken != best_action){
+        for(unsigned int a = 0; a < nonZeroElig.size(); a++){
+            for(unsigned int i = 0; i < nonZeroElig[a].size(); i++){
+                int idx = nonZeroElig[a][i];
+                e[a][idx] = 0.0;
+            }
+            nonZeroElig[a].clear();
+        }
+    }else{
+        updateReplTrace(action_taken);
+    }
+    //For all i in Fa:
+    for(unsigned int i = 0; i < active_features_before.size(); i++){
+        int idx = active_features_before[i];
+        //If the trace is zero it is not in the vector
+        //of non-zeros, thus it needs to be added
+        if(e[currentAction][idx] == 0){
+            nonZeroElig[action_taken].push_back(idx);
+        }
+        e[action_taken][idx] = 1;
+    }
+
+    //Update weights vector:
+    for(unsigned int a = 0; a < nonZeroElig.size(); a++){
+        for(unsigned int i = 0; i < nonZeroElig[a].size(); i++){
+            int idx = nonZeroElig[a][i];
+            w[a][idx] = w[a][idx] + (alpha/(maxFeatSizeSeen)) * delta * e[a][idx];
+            //cout<<w[a][idx]<<endl;
+        }
+    }
+
 }
