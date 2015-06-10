@@ -23,6 +23,8 @@ QLearner::QLearner(Environment<bool>& env, Parameters *param) : RLLearner<bool>(
 
     numFeatures = env.getNumberOfFeatures();
 
+    steps = 0;
+    
     //Get the number of effective actions:
     if(param->isMinimalAction()){
         actions = env.getMinimalActionSet();
@@ -289,5 +291,16 @@ void QLearner::stepTaken(std::vector<int>& active_features_before,int action_tak
             //cout<<w[a][idx]<<endl;
         }
     }
-
+    steps++;
+    if(steps % 100000 == 0){
+        
+        ofstream file("weights"+to_string(steps)+".bak");
+        file<<w.size()<<" "<<w[0].size()<<endl;
+        for(const auto& l : w){
+            for(const auto& ll: l ){
+                file<<ll<<endl;
+            }
+        }
+        file<<endl;
+    }
 }

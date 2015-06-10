@@ -30,6 +30,7 @@ class QLearner : public RLLearner<bool>{
 		vector<vector<int> >nonZeroElig;//To optimize the implementation
 
     unsigned maxFeatSizeSeen;
+    unsigned steps;
 		/**
  		* Constructor declared as private to force the user to instantiate QLearner
  		* informing the parameters to learning/execution.

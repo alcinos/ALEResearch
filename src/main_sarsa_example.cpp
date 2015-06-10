@@ -108,7 +108,7 @@ int main(int argc, char** argv){
     sarsaLearner.learnPolicy(env);
 
 
-    ALEInterface *ale2 = new ALEInterface(param.getDisplay());
+    /*ALEInterface *ale2 = new ALEInterface(param.getDisplay());
 
 	ale2->setFloat("stochasticity", 0.00);
 	ale2->setInt("random_seed", param.getSeed());
@@ -119,8 +119,8 @@ int main(int argc, char** argv){
 
 	ale2->loadROM(param.getRomPath().c_str());
     
-    ale2->setBool("display_screen",true);
-    ALEEnvironment<BasicFeatures> env2(ale2,&features);
+    ale2->setBool("display_screen",true);*/
+    ALEEnvironment<BasicFeatures> env2(ale,&features);
     printf("\n\n== Evaluation without Learning == \n\n");
     qLearner.evaluatePolicy(env2);
 	
