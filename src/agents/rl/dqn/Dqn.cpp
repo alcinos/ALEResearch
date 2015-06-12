@@ -17,8 +17,8 @@ DqnLearner::DqnLearner(Environment<Pixel>& env, Parameters* param) : RLLearner<P
     lambda = param->getLambda();
     m_playFreq = param->getNumStepsPerAction();
 
-    caffe::Caffe::SetDevice(0);
-    caffe::Caffe::set_mode(caffe::Caffe::GPU);
+    //caffe::Caffe::SetDevice(0);
+    caffe::Caffe::set_mode(caffe::Caffe::CPU);
     caffe::Caffe::DeviceQuery();
     
     // Initialize net and solver

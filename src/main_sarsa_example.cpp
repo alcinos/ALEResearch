@@ -24,6 +24,8 @@
 #include "environments/ale/ALEEnvironment.hpp"
 #include<fstream>
 
+#include <snappy/snappy.h>
+
 void printBasicInfo(Parameters param){
 	printf("Seed: %d\n", param.getSeed());
 	printf("\nCommand Line Arguments:\nPath to Config. File: %s\nPath to ROM File: %s\nPath to Backg. File: %s\n", 
@@ -71,9 +73,17 @@ int main(int argc, char** argv){
     for(const auto& t : p){
         file<<(int)t<<endl;
     }
-
     file.close();
-    
+    cout<<"Uncompressed : "<<p.size()<<endl;
+    string res;
+    snappy::Compress(reinterpret_cast<const char*>(p.data()),p.size(),&res);
+    cout<<"compressed : "<<res.size()<<endl;
+    array<uint8_t,7056> decomp;
+    snappy::RawUncompress(res.data(),res.size(),reinterpret_cast<char*>(decomp.data()));
+    for(int i=0;i<decomp.size();i++){
+        assert(decomp[i] == p[i]);
+    }
+
     ALEEnvironment<ScreenFeatures> env(&ale,&ff);
 
 	//Instantiating the learning algorithm:
