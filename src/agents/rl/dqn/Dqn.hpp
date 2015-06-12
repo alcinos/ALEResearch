@@ -19,6 +19,7 @@
 #include "../RLLearner.hpp"
 #include <vector>
 #include <caffe/caffe.hpp>
+#include <snappy/snappy.h>
 
 using Pixel = uint8_t;
 
@@ -47,6 +48,33 @@ public:
     void evaluatePolicy(Environment<Pixel>& env);
 
 protected:
+
+    struct replay_memory
+    {
+        replay_memory(){cur_pos = 0; num_stored = 0;}
+        replay_memory(int size){
+            cur_pos = 0; num_stored = 0;
+            frames.resize(size);
+            rewards.resize(size);
+            actions.resize(size);
+            terminations.resize(size);
+        }
+        void clear(){cur_pos = 0;num_stored = 0;}
+        void storeFrame(const std::vector<Pixel>& frame);
+        void storeReward(float reward);
+        void storeAction(int);
+        void storeTermination(bool);
+        int num_stored;
+        std::vector<std::string> frames;
+        std::vector<float> rewards;
+        std::vector<int> actions;
+        std::vector<bool> terminations;
+        int cur_pos;
+    };
+
+    int m_replay_size;
+    replay_memory m_replay_memory;
+    
     std::shared_ptr<caffe::Solver<float>> m_solver;
     boost::shared_ptr<caffe::Net<float>> m_net;
 

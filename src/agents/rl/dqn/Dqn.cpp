@@ -16,7 +16,9 @@ DqnLearner::DqnLearner(Environment<Pixel>& env, Parameters* param) : RLLearner<P
     alpha = param->getAlpha();
     lambda = param->getLambda();
     m_playFreq = param->getNumStepsPerAction();
-
+    m_replay_size = 1000000;
+    m_replay_memory = replay_memory(m_replay_size);
+    
     //caffe::Caffe::SetDevice(0);
     caffe::Caffe::set_mode(caffe::Caffe::CPU);
     caffe::Caffe::DeviceQuery();
@@ -43,10 +45,103 @@ DqnLearner::DqnLearner(Environment<Pixel>& env, Parameters* param) : RLLearner<P
     m_Q = vector<double>(18);
 
 }
-
+void DqnLearner::replay_memory::storeFrame(const std::vector<Pixel>& frame)
+{
+    snappy::Compress(reinterpret_cast<const char*>(frame.data()),frame.size(),&frames[cur_pos]);
+}
+void DqnLearner::replay_memory::storeReward(float reward)
+{
+    rewards[cur_pos] = reward;
+    cur_pos = (cur_pos + 1) % rewards.size(); //the reward is always stored last, hence we have to increment here
+    num_stored = min((int)rewards.size(),num_stored+1);
+}
+void DqnLearner::replay_memory::storeAction(int action){
+    actions[cur_pos] = action;
+}
+void DqnLearner::replay_memory::storeTermination(bool term){
+    terminations[cur_pos] = term;
+}
 void DqnLearner::learnPolicy(Environment<Pixel>& env){
+    m_replay_memory.clear();
+    //we recall that the reward associated to an action is the reward obtained when performing it and all its repetition (in case frame skip is not 1)
+    double reward = 0, cumReward = 0, prevCumReward = 0;
+    struct timeval tvBegin, tvEnd, tvDiff;
+	double elapsedTime;
 
+    vector<Pixel> current_frame;
+    std::array<vector<Pixel>, m_numFramesPerInput> frame_buffer; //this is where the last frames seen are stored
+    int frame_buffer_size = 0; //number of different frames in the buffer
+    int frame_buffer_index = 0; //position where the next frame should be written
+    
+    bool firstActionTaken = false; 
+    int totalNumberFrames = 0;
+    bool correctlySaved = false; //whether the last action was correctly saved in the replay mem. Incorrect saving occurs when the episode terminates before the next action is chosen.
+	for(int episode = 0; totalNumberFrames < totalNumberOfFramesToLearn; episode++){
+		//Repeat(for each step of episode) until game is over:
+        int currentAction = 0;
+        gettimeofday(&tvBegin, NULL);
+        int step = -1;
+        reward = 0;
+		while(!env.isTerminal()){
+            step++;
+            //get the current frame. We must call this function even if the frame will be skipped
+            env.getRawFeatures(current_frame);
+            if(step%m_playFreq !=0){
+                //don't forget to keep track of the rewards during frame skip
+                reward+=env.act(actions[currentAction]);
+                //cout<<"skipping with "<<currentAction<<endl;
+                continue; //manual frame skip
+            }
+            //if we reach this point, it means that the last action has not led to termination, we can store tihs information in the replay mem.
+            m_replay_memory.storeTermination(false);
+            //at this point, reward contain the accumulated reward over the past skipped frames. We have to store it, crediting the last action taken, and reinit it.
+            m_replay_memory.storeReward(reward);
+            reward = 0;
+            //acknowledge that the saving is successfull
+            correctlySaved = true;
+            
+            //store the current frame in the buffer
+            std::swap(current_frame,frame_buffer[frame_buffer_index]);
+            frame_buffer_size = min(frame_buffer_size+1,m_numFramesPerInput);
+            frame_buffer_index = (frame_buffer_index+1) % m_numFramesPerInput;
 
+            //store it also in the replay memory
+            m_replay_memory.storeFrame(current_frame);
+            if(frame_buffer_size < m_numFramesPerInput){
+                //we do not have enough frames to feed the net, we just noop
+                reward+=env.act(PLAYER_A_NOOP);
+                cout<<"playing a noop"<<endl;
+                continue;
+            }
+            feedNet(frame_buffer,frame_buffer_index);
+            updateQValues();
+            currentAction = epsilonGreedy(m_Q);
+            
+            correctlySaved = false;
+            firstActionTaken = true;
+            //cout<<"playing with "<<currentAction<<endl;
+			//Take action, observe reward and next state:
+			reward += env.act(actions[currentAction]);
+            //cout<<"playing"<<currentAction<<endl;
+			cumReward  += reward;
+		}
+        if(!correctlySaved){
+            //the last action led to termination
+            m_replay_memory.storeTermination(true);
+            m_replay_memory.storeReward(reward);
+            reward = 0;
+        }
+		gettimeofday(&tvEnd, NULL);
+		timeval_subtract(&tvDiff, &tvEnd, &tvBegin);
+		elapsedTime = double(tvDiff.tv_sec) + double(tvDiff.tv_usec)/1000000.0;
+		double fps = double(env.getEpisodeFrameNumber())/elapsedTime;
+        double fps2 = double(step)/elapsedTime;
+		printf("episode: %d,\t%.0f points,\tavg. return: %.1f,\t%d frames,\t%.0f fps,\t %.0f\n", 
+               episode + 1, (cumReward-prevCumReward), (double)cumReward/(episode + 1.0), env.getEpisodeFrameNumber(), fps, fps2);
+		totalNumberFrames += env.getEpisodeFrameNumber();
+		env.reset();
+		prevCumReward = cumReward;
+	}
 }
 
 void DqnLearner::feedNet(std::array<std::vector<Pixel>, m_numFramesPerInput>& input_buffer, int current_buffer_index)
@@ -115,6 +210,7 @@ void DqnLearner::evaluatePolicy(Environment<Pixel> & env)
             //cout<<"playing"<<currentAction<<endl;
 			cumReward  += reward;
             reward = 0;
+            step++;
 		}
 		gettimeofday(&tvEnd, NULL);
 		timeval_subtract(&tvDiff, &tvEnd, &tvBegin);
@@ -130,5 +226,6 @@ void DqnLearner::evaluatePolicy(Environment<Pixel> & env)
     
 
 }
+
 
 
