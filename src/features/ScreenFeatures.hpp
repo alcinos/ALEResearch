@@ -19,7 +19,7 @@ class ScreenFeatures : public Features::Features{
 private:
     Parameters *param;
     int numberOfFeatures;
-
+    unsigned char* previousScreen;
     static constexpr std::array<uint8_t,256> m_ntsc_to_grayscale = NtscConversionTableGenerator();
 public:
     typedef uint8_t FeatureType;

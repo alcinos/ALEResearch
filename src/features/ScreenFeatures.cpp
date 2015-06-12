@@ -14,20 +14,30 @@
 using namespace std;
 constexpr std::array<uint8_t,256> ScreenFeatures::m_ntsc_to_grayscale;
 
-ScreenFeatures::ScreenFeatures(Parameters* param)
+ScreenFeatures::ScreenFeatures(Parameters* param) :
+    previousScreen(NULL)
 {
     this->param = param;
+    
 }
 
-ScreenFeatures::~ScreenFeatures(){}
+ScreenFeatures::~ScreenFeatures(){
+    if(previousScreen){
+        delete[] previousScreen;
+    }
+}
 void ScreenFeatures::getRawFeatures(vector<uint8_t> & feat, ALEInterface* ale){
     unsigned char* rawScreen = ale->getScreen().getArray();
     const auto old_height =  ale->getScreen().height();
     const auto old_width = ale->getScreen().width();
     const auto old_size = old_height*old_width;
-    //convert to grayscale
+    if(!previousScreen){
+        previousScreen = new unsigned char[old_size];
+        memset(previousScreen,0,old_size*sizeof(unsigned char));
+    }
+    //take max with previous frame and convert to grayscale
     for(unsigned i = 0; i< old_size;i++){
-        rawScreen[i] = m_ntsc_to_grayscale[rawScreen[i]];
+        rawScreen[i] = m_ntsc_to_grayscale[max(rawScreen[i],previousScreen[i])];
     }
     
     //we now have to make a scaling.
@@ -62,6 +72,7 @@ void ScreenFeatures::getRawFeatures(vector<uint8_t> & feat, ALEInterface* ale){
             feat[offset++] = gray ;                                   
         }
     }
+    memcpy(previousScreen,rawScreen,old_size*sizeof(unsigned char));
 }
 
 
