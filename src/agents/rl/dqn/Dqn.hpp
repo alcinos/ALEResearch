@@ -58,13 +58,13 @@ protected:
     static constexpr int m_numActions = 18;
 
     //buffer in wich we are going to write the data to be fed to the network
-    float input_buff[m_numFramesPerInput*m_imageDim*m_imageDim*m_batchSize];
+    float m_input_buff[m_numFramesPerInput*m_imageDim*m_imageDim*m_batchSize];
 
     //caffe needs labels as input, we provide it a pointer to dummy data.
-    float dummy_labels[m_batchSize];
+    float m_dummy_labels[m_batchSize];
 
     //buffer containing the target value (to compute the loss)
-    float target_buff[m_batchSize*m_numActions];
+    float m_target_buff[m_batchSize*m_numActions];
     
     void feedNet(std::array<std::vector<Pixel>, m_numFramesPerInput>& buffer, int current_buffer_index);
 

@@ -51,23 +51,23 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
 
 void DqnLearner::feedNet(std::array<std::vector<Pixel>, m_numFramesPerInput>& input_buffer, int current_buffer_index)
 {
-    memset(input_buff,0,m_numFramesPerInput*m_imageDim*m_imageDim*m_batchSize*sizeof(float));
+    memset(m_input_buff,0,m_numFramesPerInput*m_imageDim*m_imageDim*m_batchSize*sizeof(float));
     int size_written = 0;
     //copy the data in the input blob
     for(int i = 0; i< m_numFramesPerInput; i++){
         int cur_pos = (i+current_buffer_index) % m_numFramesPerInput;
-        std::copy(input_buffer[cur_pos].begin(),input_buffer[cur_pos].end(),input_buff + size_written);
+        std::copy(input_buffer[cur_pos].begin(),input_buffer[cur_pos].end(),m_input_buff + size_written);
         size_written += input_buffer[cur_pos].size();
     }
-    m_frame_input_layer->Reset(input_buff,dummy_labels,m_batchSize);
-    m_target_input_layer->Reset(target_buff,dummy_labels,m_batchSize);
+    m_frame_input_layer->Reset(m_input_buff,m_dummy_labels,m_batchSize);
+    m_target_input_layer->Reset(m_target_buff,m_dummy_labels,m_batchSize);
     //run forward computation
     m_net->ForwardPrefilled();
 }
 
 void DqnLearner::updateQValues()
 {
-    const float *q_from_net = m_q_values_blob->gpu_data();
+    const float *q_from_net = m_q_values_blob->cpu_data();
     copy(q_from_net,q_from_net+(int)m_Q.size(),m_Q.begin());
 }
 void DqnLearner::evaluatePolicy(Environment<Pixel> & env)
@@ -100,6 +100,7 @@ void DqnLearner::evaluatePolicy(Environment<Pixel> & env)
             }
             if(step % m_playFreq==0){
                 feedNet(frame_buffer,frame_buffer_index);
+                updateQValues();
                 currentAction = epsilonGreedy(m_Q);
             }
 			//Take action, observe reward and next state:
