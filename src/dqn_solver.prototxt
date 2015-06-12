@@ -1,4 +1,4 @@
-net: "dqn_net.prototxt"
+#net: "dqn_net.prototxt"
 solver_type: ADAGRAD
 #momentum: 0.95
 #learning rate

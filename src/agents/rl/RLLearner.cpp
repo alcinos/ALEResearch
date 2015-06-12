@@ -14,9 +14,11 @@ RLLearner<FeatureType>::RLLearner(Environment<FeatureType>& env, Parameters *par
 	//Get the number of effective actions:
 	if(param->isMinimalAction()){
 		actions = env.getMinimalActionSet();
+        cout<<"minimal action set "<<actions.size()<<endl;
 	}
 	else{
 		actions = env.getLegalActionSet();
+        cout<<"legal action set"<<actions.size()<<endl;
 	}
 	numActions = actions.size();
 }
