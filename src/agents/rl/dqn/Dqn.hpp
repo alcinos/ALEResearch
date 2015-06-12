@@ -5,7 +5,12 @@
  * 
  * @brief  This is an implementation of a Deep Q learning agent, initially based on DeepMind's Nature paper.
  * 
- * 
+ * Implementation note about the frame skip : the frame skip is dealt with manually from within the agent. Please set it to 1 inside the ALE parameters.
+ * When the frame skip is set to 1, nothing special occurs, the agent plays at each frames
+ * When the frame skip is > 1, then the agent doesn't play at each frames. However, we cannot completly ignore
+ * the skipped frames, because we when the agent plays, its input is a max taken over the current frame and 
+ * the frame just before (to avoid flickering). Hence, we have to keep track of this penultimate frame. This is
+ * handled by the feature class, but we must make sure that we call it on every frames, even the skipped ones.
  */
 
 #ifndef DQN_H

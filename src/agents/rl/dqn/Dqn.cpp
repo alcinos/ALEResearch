@@ -85,36 +85,44 @@ void DqnLearner::evaluatePolicy(Environment<Pixel> & env)
 		//Repeat(for each step of episode) until game is over:
         int currentAction = 0;
         gettimeofday(&tvBegin, NULL);
-		for(int step = 0; !env.isTerminal() && step < episodeLength; step++){
-            //get the current frame and store it in the buffer
+        int step;
+		for(step = 0; !env.isTerminal() && step < episodeLength; step++){
+            //get the current frame. We must call this function even if the frame will be skipped
             env.getRawFeatures(current_frame);
+            if(step%m_playFreq !=0){
+                //don't forget to keep track of the rewards during frame skip
+                reward+=env.act(actions[currentAction]);
+                //cout<<"skipping with "<<currentAction<<endl;
+                continue; //manual frame skip
+            }
+            //store the current frame in the buffer
             std::swap(current_frame,frame_buffer[frame_buffer_index]);
             frame_buffer_size = min(frame_buffer_size+1,m_numFramesPerInput);
             frame_buffer_index = (frame_buffer_index+1) % m_numFramesPerInput;
 
             if(frame_buffer_size < m_numFramesPerInput){
                 //we do not have enough frames to feed the net, we just noop
-                env.act(PLAYER_A_NOOP);
+                reward+=env.act(PLAYER_A_NOOP);
                 cout<<"playing a noop"<<endl;
                 continue;
             }
-            if(step % m_playFreq==0){
-                feedNet(frame_buffer,frame_buffer_index);
-                updateQValues();
-                currentAction = epsilonGreedy(m_Q);
-            }
+            feedNet(frame_buffer,frame_buffer_index);
+            updateQValues();
+            currentAction = epsilonGreedy(m_Q);
+            //cout<<"playing with "<<currentAction<<endl;
 			//Take action, observe reward and next state:
-			reward = env.act(actions[currentAction]);
+			reward += env.act(actions[currentAction]);
             //cout<<"playing"<<currentAction<<endl;
 			cumReward  += reward;
+            reward = 0;
 		}
 		gettimeofday(&tvEnd, NULL);
 		timeval_subtract(&tvDiff, &tvEnd, &tvBegin);
 		elapsedTime = double(tvDiff.tv_sec) + double(tvDiff.tv_usec)/1000000.0;
 		double fps = double(env.getEpisodeFrameNumber())/elapsedTime;
-
-		printf("episode: %d,\t%.0f points,\tavg. return: %.1f,\t%d frames,\t%.0f fps\n", 
-			episode + 1, (cumReward-prevCumReward), (double)cumReward/(episode + 1.0), env.getEpisodeFrameNumber(), fps);
+        double fps2 = double(step)/elapsedTime;
+		printf("episode: %d,\t%.0f points,\tavg. return: %.1f,\t%d frames,\t%.0f fps,\t %.0f\n", 
+               episode + 1, (cumReward-prevCumReward), (double)cumReward/(episode + 1.0), env.getEpisodeFrameNumber(), fps, fps2);
 
 		env.reset();
 		prevCumReward = cumReward;

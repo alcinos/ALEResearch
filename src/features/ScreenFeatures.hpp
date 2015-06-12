@@ -22,6 +22,7 @@ private:
     unsigned char* previousScreen;
     static constexpr std::array<uint8_t,256> m_ntsc_to_grayscale = NtscConversionTableGenerator();
 public:
+    int step; //we keep track of the number of steps
     typedef uint8_t FeatureType;
     /**
      * Destructor, used to delete the background, which is allocated dynamically.
@@ -53,7 +54,7 @@ public:
      * @param ale pointer to the interface of the arcade learning environment
      */
     void getRawFeatures(vector<FeatureType>& features,ALEInterface* ale);
-
+    
     void getCompleteFeatureVector(const ALEScreen &screen, const ALERAM &ram, vector<FeatureType>& features){};
 };
 
