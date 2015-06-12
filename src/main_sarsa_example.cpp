@@ -54,8 +54,8 @@ int main(int argc, char** argv){
 
 	ale.setFloat("stochasticity", 0.00);
 	ale.setInt("random_seed", param.getSeed());
-	//ale.setFloat("frame_skip", param.getNumStepsPerAction());
-    ale.setFloat("frame_skip",1);
+	ale.setFloat("frame_skip", param.getNumStepsPerAction());
+    //ale.setFloat("frame_skip",1);
 	ale.setInt("max_num_frames_per_episode", param.getEpisodeLength());
 
 	ale.loadROM(param.getRomPath().c_str());
