@@ -17,11 +17,11 @@ DqnLearner::DqnLearner(Environment<Pixel>& env, Parameters* param) : RLLearner<P
     lambda = param->getLambda();
     m_playFreq = param->getNumStepsPerAction();
     m_replay_size = 1000000;
-    m_target_net_update_freq = 10;
+    m_target_net_update_freq = 10000;
     m_replay_memory = replay_memory(m_replay_size);
     
-    //caffe::Caffe::SetDevice(0);
-    caffe::Caffe::set_mode(caffe::Caffe::CPU);
+    caffe::Caffe::SetDevice(0);
+    caffe::Caffe::set_mode(caffe::Caffe::GPU);
     caffe::Caffe::DeviceQuery();
     
     // Initialize net and solver
@@ -246,8 +246,8 @@ void DqnLearner::evaluatePolicy(Environment<Pixel> & env)
 void DqnLearner::updateTargetNet()
 {
     cout<<"restoring"<<endl;
-    //m_solver->Snapshot();
-    m_solver_hat->Restore("weight_snap.wg");
+    m_solver->Snapshot("weight_snap.wg");
+    m_solver_hat->Restore("weight_snap.wg.solverstate");
 }
 
 
