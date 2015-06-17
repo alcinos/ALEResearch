@@ -73,14 +73,20 @@ protected:
     };
 
     int m_replay_size;
+    int m_target_net_update_freq;
     replay_memory m_replay_memory;
     
     std::shared_ptr<caffe::Solver<float>> m_solver;
+    std::shared_ptr<caffe::Solver<float>> m_solver_hat;
     boost::shared_ptr<caffe::Net<float>> m_net;
+    boost::shared_ptr<caffe::Net<float>> m_net_hat;
 
     boost::shared_ptr<caffe::MemoryDataLayer<float>> m_frame_input_layer;
+    boost::shared_ptr<caffe::MemoryDataLayer<float>> m_frame_input_layer_hat;
     boost::shared_ptr<caffe::MemoryDataLayer<float>> m_target_input_layer;
+    boost::shared_ptr<caffe::MemoryDataLayer<float>> m_target_input_layer_hat;
     boost::shared_ptr<caffe::Blob<float>> m_q_values_blob;
+    boost::shared_ptr<caffe::Blob<float>> m_q_values_blob_hat;
 
     std::vector<double> m_Q;
     double alpha,lambda;
@@ -100,7 +106,7 @@ protected:
     float m_target_buff[m_batchSize*m_numActions];
     
     void feedNet(std::array<std::vector<Pixel>, m_numFramesPerInput>& buffer, int current_buffer_index);
-
+    void updateTargetNet();
     void updateQValues();
 };
 

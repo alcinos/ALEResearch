@@ -17,6 +17,7 @@ DqnLearner::DqnLearner(Environment<Pixel>& env, Parameters* param) : RLLearner<P
     lambda = param->getLambda();
     m_playFreq = param->getNumStepsPerAction();
     m_replay_size = 1000000;
+    m_target_net_update_freq = 10;
     m_replay_memory = replay_memory(m_replay_size);
     
     //caffe::Caffe::SetDevice(0);
@@ -27,6 +28,9 @@ DqnLearner::DqnLearner(Environment<Pixel>& env, Parameters* param) : RLLearner<P
     caffe::NetParameter *net_param = new caffe::NetParameter();
     caffe::SolverParameter solver_param;
     caffe::ReadProtoFromTextFileOrDie("dqn_solver.prototxt", &solver_param);
+    cout<<"has "<<solver_param.has_solver_type()<<endl;
+    cout<<solver_param.has_lr_policy()<<endl;
+    cout<<solver_param.SolverType_Name(solver_param.solver_type())<<endl;
     caffe::ReadNetParamsFromTextFileOrDie("dqn_net.prototxt",net_param);
     cout<<"Setting the correct number of actions..."<<endl;
     for(int i = 0;i<net_param->layers_size();i++){
@@ -37,11 +41,18 @@ DqnLearner::DqnLearner(Environment<Pixel>& env, Parameters* param) : RLLearner<P
         }
     }
     solver_param.set_allocated_net_param(net_param);
+    cout<<"Configuring first solver"<<endl;
     m_solver.reset(caffe::GetSolver<float>(solver_param));
+    cout<<"Configuring second solver"<<endl;
+    m_solver_hat.reset(caffe::GetSolver<float>(solver_param));
     m_net = m_solver->net();
+    m_net_hat = m_solver_hat->net();
     m_frame_input_layer =  boost::dynamic_pointer_cast<caffe::MemoryDataLayer<float>>( m_net->layer_by_name("frames_input_layer"));
+    m_frame_input_layer_hat =  boost::dynamic_pointer_cast<caffe::MemoryDataLayer<float>>( m_net_hat->layer_by_name("frames_input_layer"));
     m_target_input_layer = boost::dynamic_pointer_cast<caffe::MemoryDataLayer<float>>(m_net->layer_by_name("target_input_layer"));
+    m_target_input_layer_hat = boost::dynamic_pointer_cast<caffe::MemoryDataLayer<float>>(m_net_hat->layer_by_name("target_input_layer"));
     m_q_values_blob = m_net->blob_by_name("q_values");
+    m_q_values_blob_hat = m_net_hat->blob_by_name("q_values");
     m_Q = vector<double>(18);
 
 }
@@ -84,6 +95,10 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
         reward = 0;
 		while(!env.isTerminal()){
             step++;
+            //check if we have to update target network
+            if((step+totalNumberFrames)%m_target_net_update_freq == 0){
+                updateTargetNet();
+            }
             //get the current frame. We must call this function even if the frame will be skipped
             env.getRawFeatures(current_frame);
             if(step%m_playFreq !=0){
@@ -225,6 +240,14 @@ void DqnLearner::evaluatePolicy(Environment<Pixel> & env)
 	}
     
 
+}
+
+
+void DqnLearner::updateTargetNet()
+{
+    cout<<"restoring"<<endl;
+    //m_solver->Snapshot();
+    m_solver_hat->Restore("weight_snap.wg");
 }
 
 
