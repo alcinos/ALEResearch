@@ -1,6 +1,6 @@
-layers {
+layer {
   name: "frames_input_layer"
-  type: MEMORY_DATA
+  type: "MemoryData"
   top: "frames"
   top: "discarded"
   memory_data_param {
@@ -10,9 +10,9 @@ layers {
     width: 84
   }
 }
-layers {
+layer {
   name: "conv1_layer"
-  type: CONVOLUTION
+  type: "Convolution"
   bottom: "frames"
   top: "conv1"
   convolution_param {
@@ -25,15 +25,15 @@ layers {
     }
   }
 }
-layers {
+layer {
   name: "relu1"
-  type: RELU
+  type: "ReLU"
   bottom: "conv1"
   top: "conv1_relu"
 }
-layers {
+layer {
   name: "conv2_layer"
-  type: CONVOLUTION
+  type: "Convolution"
   bottom: "conv1_relu"
   top: "conv2"
   convolution_param {
@@ -46,15 +46,15 @@ layers {
     }
   }
 }
-layers {
+layer {
   name: "relu2"
-  type: RELU
+  type: "ReLU"
   bottom: "conv2"
   top: "conv2_relu"
 }
-layers {
+layer {
   name: "conv3_layer"
-  type: CONVOLUTION
+  type: "Convolution"
   bottom: "conv2_relu"
   top: "conv3"
   convolution_param {
@@ -67,15 +67,15 @@ layers {
     }
   }
 }
-layers {
+layer {
   name: "relu3"
-  type: RELU
+  type: "ReLU"
   bottom: "conv3"
   top: "conv3_relu"
 }
-layers {
+layer {
   name: "ip1_layer"
-  type: INNER_PRODUCT
+  type: "InnerProduct"
   bottom: "conv3_relu"
   top: "ip1"
   inner_product_param {
@@ -86,15 +86,15 @@ layers {
     }
   }
 }
-layers {
+layer {
   name: "ip1_relu_layer"
-  type: RELU
+  type: "ReLU"
   bottom: "ip1"
   top: "ip1_relu"
 }
-layers {
+layer {
   name: "ip2_layer"
-  type: INNER_PRODUCT
+  type: "InnerProduct"
   bottom: "ip1_relu"
   top: "q_values"
   inner_product_param {
@@ -106,9 +106,9 @@ layers {
   }
 }
 
-layers {
+layer {
   name: "target_input_layer"
-  type: MEMORY_DATA
+  type: "MemoryData"
   top: "target"
   top: "discarded2"
   memory_data_param {
@@ -118,16 +118,16 @@ layers {
     width: 1
   }
 }
-layers {
+layer {
   name: "loss"
-  type: EUCLIDEAN_LOSS
+  type: "EuclideanLoss"  
   bottom: "q_values"
   bottom: "target"
   top: "loss"
 }
-layers {
+layer {
   name: "silence_layer"
-  type: SILENCE
+  type: "Silence"
   bottom: "discarded"
   bottom: "discarded2"
 }
