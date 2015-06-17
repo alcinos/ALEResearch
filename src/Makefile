@@ -13,11 +13,11 @@ USE_SDL     := 1
 # -D__USE_SDL Ensures we can use SDL to see the game screen
 # -D_GNU_SOURCE=1 means the compiler will use the GNU standard of compilation, the superset of all other standards under GNU C libraries.
 # -D_REENTRANT causes the compiler to use thread safe (i.e. re-entrant) versions of several functions in the C library.
-CFLAGS := -c -O3 -I$(ALE)/src -I/opt/local/include -I/opt/caffe/include -I/opt/cuda/include -I../libs -D_GNU_SOURCE=1 -D_REENTRANT -std=c++11 -Wno-deprecated-declarations -Wall -g
+CFLAGS := -c -O3 -I$(ALE)/src -I/opt/local/include -I/opt/cuda/include -I../libs -I../libs/caffe/include -D_GNU_SOURCE=1 -D_REENTRANT -std=c++11 -Wno-deprecated-declarations -Wall -g
 
 EXE := learner
 # Search for library 'ale' and library 'z' when linking.
-LDFLAGS := -L$(ALE) -L../libs/snappy -lale -lz -lm -lglog -lgflags -lprotobuf -lcaffe -lsnappy
+LDFLAGS := -L$(ALE) -L../libs/snappy -L../libs/caffe/lib -lale -lz -lm -lglog -lgflags -lprotobuf -lcaffe -lsnappy
 
 ifeq ($(strip $(USE_SDL)), 1)
   FLAGS +=  -D__USE_SDL `sdl-config --cflags --libs`
@@ -30,7 +30,7 @@ VPATH = common:features:agents/rl/sarsa:agents/rl/qlearning:agents/baseline:agen
 SRCS = main_sarsa_example.cpp Mathematics.cpp Parameters.cpp Timer.cpp Features.cpp Background.cpp BasicFeatures.cpp BASSFeatures.cpp BPROFeatures.cpp RAMFeatures.cpp SarsaLearner.cpp QLearner.cpp ConstantAgent.cpp PerturbAgent.cpp  RandomAgent.cpp  HumanAgent.cpp ScreenFeatures.cpp Dqn.cpp #TRSarsaLearner.cpp
 OBJS = $(subst .cpp,.o, $(addprefix bin/,$(SRCS)))
 
-all: snappy $(EXE)
+all: snappy caffe $(EXE)
 
 $(EXE): $(OBJS)
 	$(CXX) $(LDFLAGS) $(OBJS) -o $(EXE)
@@ -49,3 +49,7 @@ snappy:
 	cd ../libs/snappy && test ! -e configure && ./autogen.sh || echo "snappy already generated"
 	cd ../libs/snappy && test ! -e Makefile && ./configure || echo "snappy already configured"
 	$(MAKE) -C ../libs/snappy/
+
+
+caffe:
+	cd ../libs/caffe && cmake . -DBUILD_SHARED_LIB=ON && make -j 8 && make proto

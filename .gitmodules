@@ -1,0 +1,3 @@
+[submodule "libs/caffe"]
+	path = libs/caffe
+	url = https://github.com/alcinos/caffe.git
