@@ -19,6 +19,10 @@ DqnLearner::DqnLearner(Environment<Pixel>& env, Parameters* param) : RLLearner<P
     m_replay_size = 1000000;
     m_target_net_update_freq = 10000;
     m_replay_memory = replay_memory(m_replay_size);
+
+    m_epsilon_beginning = 1.0;
+    m_epsilon_end = 0.1;
+    m_end_exploration = 1000000;
     
     caffe::Caffe::SetDevice(0);
     caffe::Caffe::set_mode(caffe::Caffe::GPU);
@@ -75,6 +79,7 @@ void DqnLearner::replay_memory::storeTermination(bool term){
 void DqnLearner::learnPolicy(Environment<Pixel>& env){
     m_replay_memory.clear();
     //we recall that the reward associated to an action is the reward obtained when performing it and all its repetition (in case frame skip is not 1)
+    this->epsilon = m_epsilon_beginning;
     double reward = 0, cumReward = 0, prevCumReward = 0;
     struct timeval tvBegin, tvEnd, tvDiff;
 	double elapsedTime;
@@ -87,6 +92,8 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
     bool firstActionTaken = false; 
     int totalNumberFrames = 0;
     bool correctlySaved = false; //whether the last action was correctly saved in the replay mem. Incorrect saving occurs when the episode terminates before the next action is chosen.
+
+    int nb_frames_played = 0;
 	for(int episode = 0; totalNumberFrames < totalNumberOfFramesToLearn; episode++){
 		//Repeat(for each step of episode) until game is over:
         int currentAction = 0;
@@ -96,7 +103,7 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
 		while(!env.isTerminal()){
             step++;
             //check if we have to update target network
-            if((step+totalNumberFrames)%m_target_net_update_freq == 0){
+            if(nb_frames_played%m_target_net_update_freq == 0){
                 updateTargetNet();
             }
             //get the current frame. We must call this function even if the frame will be skipped
@@ -130,6 +137,8 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
             }
             feedNet(frame_buffer,frame_buffer_index);
             updateQValues();
+            //anneal epsilon
+            this->epsilon = m_epsilon_end + max(0.0,(m_epsilon_beginning-m_epsilon_end)*(1.0-double(nb_frames_played)/double(m_end_exploration)));
             currentAction = epsilonGreedy(m_Q);
             
             correctlySaved = false;
@@ -137,6 +146,7 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
             //cout<<"playing with "<<currentAction<<endl;
 			//Take action, observe reward and next state:
 			reward += env.act(actions[currentAction]);
+            nb_frames_played++;
             //cout<<"playing"<<currentAction<<endl;
 			cumReward  += reward;
 		}

@@ -75,6 +75,8 @@ protected:
     int m_replay_size;
     int m_target_net_update_freq;
     replay_memory m_replay_memory;
+    double m_epsilon_beginning,m_epsilon_end;
+    int m_end_exploration;
     
     std::shared_ptr<caffe::Solver<float>> m_solver;
     std::shared_ptr<caffe::Solver<float>> m_solver_hat;

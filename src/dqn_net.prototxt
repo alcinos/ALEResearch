@@ -16,6 +16,7 @@ layer {
   bottom: "frames"
   top: "conv1"
   convolution_param {
+    #engine: FFT
     num_output: 32
     kernel_size: 8
     stride: 4
@@ -37,6 +38,7 @@ layer {
   bottom: "conv1_relu"
   top: "conv2"
   convolution_param {
+    #engine: FFT
     num_output: 64
     kernel_size: 4
     stride: 2
@@ -58,6 +60,7 @@ layer {
   bottom: "conv2_relu"
   top: "conv3"
   convolution_param {
+    #engine: FFT
     num_output: 64
     kernel_size: 3
     stride: 1
