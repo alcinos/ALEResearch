@@ -13,7 +13,6 @@
 
 #include <caffe/util/upgrade_proto.hpp> 
 DqnLearner::DqnLearner(Environment<Pixel>& env, Parameters* param) : RLLearner<Pixel>(env,param){
-    this->numActions = 18;
     alpha = param->getAlpha();
     lambda = param->getLambda();
     m_playFreq = param->getNumStepsPerAction();
@@ -41,11 +40,15 @@ DqnLearner::DqnLearner(Environment<Pixel>& env, Parameters* param) : RLLearner<P
     cout<<solver_param.SolverType_Name(solver_param.solver_type())<<endl;
     caffe::ReadNetParamsFromTextFileOrDie("dqn_net.prototxt",net_param);
     cout<<"Setting the correct number of actions..."<<endl;
-    for(int i = 0;i<net_param->layers_size();i++){
-        auto lay = net_param->mutable_layers(i);
+    for(int i = 0;i<net_param->layer_size();i++){
+        auto lay = net_param->mutable_layer(i);
         if(lay->top_size()>0&&lay->top(0)=="q_values"){
             auto inner = lay->mutable_inner_product_param();
             inner->set_num_output(numActions);
+        }
+        if(lay->name()=="target_input_layer"){
+            auto data = lay->mutable_memory_data_param();
+            data->set_channels(numActions);
         }
     }
     solver_param.set_allocated_net_param(net_param);
