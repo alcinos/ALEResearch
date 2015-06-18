@@ -78,6 +78,7 @@ protected:
     replay_memory m_replay_memory;
     double m_epsilon_beginning,m_epsilon_end;
     int m_end_exploration;
+    int m_SGDFrequency;
     static constexpr int m_numFramesPerInput = 4;// this is the number of stacked frames given to the network as input
     static constexpr int m_imageDim = 84;
     static constexpr int m_batchSize = 32;

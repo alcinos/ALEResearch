@@ -13,12 +13,14 @@
 
 #include <caffe/util/upgrade_proto.hpp> 
 DqnLearner::DqnLearner(Environment<Pixel>& env, Parameters* param) : RLLearner<Pixel>(env,param){
+    this->numActions = 18;
     alpha = param->getAlpha();
     lambda = param->getLambda();
     m_playFreq = param->getNumStepsPerAction();
     m_replay_size = 1000000;
     m_target_net_update_freq = 10000;
     m_replay_memory = replay_memory(m_replay_size);
+    m_SGDFrequency = 4;
 
     m_epsilon_beginning = 1.0;
     m_epsilon_end = 0.1;
@@ -103,6 +105,7 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
     bool correctlySaved = false; //whether the last action was correctly saved in the replay mem. Incorrect saving occurs when the episode terminates before the next action is chosen.
 
     int nb_frames_played = 0;
+    int nb_frames_SGD = 0;
 	for(int episode = 0; totalNumberFrames < totalNumberOfFramesToLearn; episode++){
 		//Repeat(for each step of episode) until game is over:
         int currentAction = 0;
@@ -112,7 +115,7 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
 		while(!env.isTerminal()){
             step++;
             //check if we have to update target network
-            if(nb_frames_played >0 && nb_frames_played%m_target_net_update_freq == 0){
+            if(nb_frames_SGD >0 && nb_frames_SGD%m_target_net_update_freq == 0){
                 updateTargetNet();
             }
             //get the current frame. We must call this function even if the frame will be skipped
@@ -158,7 +161,10 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
 			//Take action, observe reward and next state:
 			reward += env.act(actions[currentAction]);
             nb_frames_played++;
-            miniBatchLearning();            
+            if(nb_frames_played % m_SGDFrequency == 0){
+                miniBatchLearning();
+                nb_frames_SGD++;
+            }
             //cout<<"playing"<<currentAction<<endl;
 			cumReward  += reward;
 		}
@@ -178,6 +184,7 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
 		totalNumberFrames += env.getEpisodeFrameNumber();
 		env.reset();
 		prevCumReward = cumReward;
+        m_solver->Snapshot("weight_end.wg");
 	}
 }
 
@@ -322,9 +329,9 @@ void DqnLearner::miniBatchUncompressFrames(int t)
 
 void DqnLearner::miniBatchLearning()
 {
-    cout<<m_replay_memory.num_stored<<endl;
+    //cout<<m_replay_memory.num_stored<<endl;
     if(m_replay_memory.num_stored-1>m_batchSize){
-        cout<<"minibatch"<<endl;
+        //cout<<"minibatch"<<endl;
         //reset the input blobs
         memset(m_input_buff,0,m_numFramesPerInput*m_imageDim*m_imageDim*m_batchSize*sizeof(float));
         memset(m_input_buff_hat,0,m_numFramesPerInput*m_imageDim*m_imageDim*m_batchSize*sizeof(float));
@@ -354,9 +361,9 @@ void DqnLearner::miniBatchLearning()
         //we retrieve the data
         const float *q_from_net = m_q_values_blob->cpu_data();
         for(int i=0;i<m_batchSize*numActions; i++){
-            cout<<q_from_net[i]<<" ";
+            //cout<<q_from_net[i]<<" ";
         }
-        cout<<endl<<endl<<endl;
+        //cout<<endl<<endl<<endl;
         //most of the current q values are going to be unchanged, we let them be the target values
         const int offset = numActions;
         std::copy(q_from_net,q_from_net+(m_batchSize*offset),m_target_buff);
@@ -387,7 +394,7 @@ void DqnLearner::miniBatchLearning()
         m_frame_input_layer->Reset(m_input_buff,m_dummy_labels,m_batchSize);
         m_target_input_layer->Reset(m_target_buff,m_dummy_labels,m_batchSize);
         for(int i=0;i<m_batchSize*numActions; i++){
-            cout<<m_target_buff[i]<<" ";
+            //cout<<m_target_buff[i]<<" ";
         }
 
         //we do one step of computation

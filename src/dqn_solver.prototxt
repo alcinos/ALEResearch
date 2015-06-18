@@ -4,6 +4,7 @@ momentum: 0.95
 #learning rate
 base_lr: 0.00025
 lr_policy: "fixed"
-display: 10000
+display: 1000
 stepsize: 1
 gamma: 0.99
+rms_decay:0.95
