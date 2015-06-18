@@ -32,6 +32,7 @@ public:
     DqnLearner() = delete;
     
     DqnLearner(Environment<Pixel>& env, Parameters *param);
+    ~DqnLearner();
 
     /** This function is the learning function of the agent 
      * In this phase, several episodes are simulated, and the weight of the deep neural network are updated.
@@ -77,6 +78,9 @@ protected:
     replay_memory m_replay_memory;
     double m_epsilon_beginning,m_epsilon_end;
     int m_end_exploration;
+    static constexpr int m_numFramesPerInput = 4;// this is the number of stacked frames given to the network as input
+    static constexpr int m_imageDim = 84;
+    static constexpr int m_batchSize = 32;
     
     std::shared_ptr<caffe::Solver<float>> m_solver;
     std::shared_ptr<caffe::Solver<float>> m_solver_hat;
@@ -91,25 +95,29 @@ protected:
     boost::shared_ptr<caffe::Blob<float>> m_q_values_blob_hat;
 
     std::vector<double> m_Q;
+    std::vector<bool> m_picked; //used for minibatch
+    unsigned char decompress_buff[m_imageDim*m_imageDim*(m_numFramesPerInput+1)]; //used for minibatch
     double alpha,lambda;
     int m_playFreq;
-    static constexpr int m_numFramesPerInput = 4;// this is the number of stacked frames given to the network as input
-    static constexpr int m_imageDim = 84;
-    static constexpr int m_batchSize = 32;
-    static constexpr int m_numActions = 18;
 
     //buffer in wich we are going to write the data to be fed to the network
     float m_input_buff[m_numFramesPerInput*m_imageDim*m_imageDim*m_batchSize];
+    float m_input_buff_hat[m_numFramesPerInput*m_imageDim*m_imageDim*m_batchSize];
 
     //caffe needs labels as input, we provide it a pointer to dummy data.
     float m_dummy_labels[m_batchSize];
+    float m_dummy_labels_hat[m_batchSize];
 
     //buffer containing the target value (to compute the loss)
-    float m_target_buff[m_batchSize*m_numActions];
+    float* m_target_buff;
+    float* m_target_buff_hat;
     
     void feedNet(std::array<std::vector<Pixel>, m_numFramesPerInput>& buffer, int current_buffer_index);
     void updateTargetNet();
     void updateQValues();
+    void miniBatchLearning();
+    void miniBatchFeed(int t, int pos_in_batch);
+    void miniBatchUncompressFrames(int t);
 };
 
 
