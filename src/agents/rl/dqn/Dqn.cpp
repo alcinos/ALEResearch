@@ -182,9 +182,9 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
 		elapsedTime = double(tvDiff.tv_sec) + double(tvDiff.tv_usec)/1000000.0;
 		double fps = double(env.getEpisodeFrameNumber())/elapsedTime;
         double fps2 = double(step)/elapsedTime;
-		printf("episode: %d,\t%.0f points,\tavg. return: %.1f,\t%d frames,\t%.0f fps,\t %.0f\n", 
-               episode + 1, (cumReward-prevCumReward), (double)cumReward/(episode + 1.0), env.getEpisodeFrameNumber(), fps, fps2);
 		totalNumberFrames += env.getEpisodeFrameNumber();
+		printf("episode: %d,\t%.0f points,\tavg. return: %.1f,\t%d frames,\t%.0f fps,\t total : %d\n", 
+               episode + 1, (cumReward-prevCumReward), (double)cumReward/(episode + 1.0), env.getEpisodeFrameNumber(), fps, totalNumberFrames);
 		env.reset();
 		prevCumReward = cumReward;
         m_solver->Snapshot("weight_end.wg");
