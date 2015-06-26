@@ -24,11 +24,13 @@ DqnLearner::DqnLearner(Environment<Pixel>& env, Parameters* param) : RLLearner<P
     m_epsilon_beginning = 1.0;
     m_epsilon_end = 0.1;
     m_end_exploration = 1000000;
+    m_frames_per_epoch = 500000;
+    numEpisodesEval = 4;
 
     m_picked = std::vector<bool>(m_replay_size);
     
-    caffe::Caffe::SetDevice(0);
-    caffe::Caffe::set_mode(caffe::Caffe::GPU);
+    //caffe::Caffe::SetDevice(0);
+    caffe::Caffe::set_mode(caffe::Caffe::CPU);
     caffe::Caffe::DeviceQuery();
     
     // Initialize net and solver
@@ -101,7 +103,7 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
     vector<Pixel> current_frame;
     std::array<vector<Pixel>, m_numFramesPerInput> frame_buffer; //this is where the last frames seen are stored
     int frame_buffer_size = 0; //number of different frames in the buffer
-    int frame_buffer_index = 0; //position where the next frame should be written
+    int frame_buffer_index = 0; //position where the next frame should be written (it is a circular buffer)
     
     bool firstActionTaken = false; 
     int totalNumberFrames = 0;
@@ -109,6 +111,7 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
 
     int nb_frames_played = 0;
     int nb_frames_SGD = 0;
+    int cur_epoch = 1;
 	for(int episode = 0; totalNumberFrames < totalNumberOfFramesToLearn; episode++){
 		//Repeat(for each step of episode) until game is over:
         int currentAction = 0;
@@ -131,6 +134,7 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
             }
             //if we reach this point, it means that the last action has not led to termination, we can store tihs information in the replay mem.
             m_replay_memory.storeTermination(false);
+			cumReward  += reward;
             //at this point, reward contain the accumulated reward over the past skipped frames. We have to clip it, store it (crediting the last action taken), and reinit it.
             reward = min(1.0,reward);
             reward = max(-1.0,reward);
@@ -165,15 +169,22 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
 			reward += env.act(actions[currentAction]);
             nb_frames_played++;
             if(nb_frames_played % m_SGDFrequency == 0){
-                miniBatchLearning();
+                float loss = miniBatchLearning();
+                if(nb_frames_played % (m_SGDFrequency*10) ==0){
+                    std::ofstream outfile;
+                    outfile.open("losses.txt", std::ios_base::app);
+                    outfile  << nb_frames_played << "\t" << loss <<endl ; 
+                }
                 nb_frames_SGD++;
             }
             //cout<<"playing"<<currentAction<<endl;
-			cumReward  += reward;
 		}
         if(!correctlySaved){
             //the last action led to termination
             m_replay_memory.storeTermination(true);
+			cumReward  += reward;
+            reward = min(1.0,reward);
+            reward = max(-1.0,reward);
             m_replay_memory.storeReward(reward);
             reward = 0;
         }
@@ -187,7 +198,13 @@ void DqnLearner::learnPolicy(Environment<Pixel>& env){
                episode + 1, (cumReward-prevCumReward), (double)cumReward/(episode + 1.0), env.getEpisodeFrameNumber(), fps, totalNumberFrames);
 		env.reset();
 		prevCumReward = cumReward;
-        m_solver->Snapshot("weight_end.wg");
+        m_solver->Snapshot("weight_temp_end.wg");
+        if(totalNumberFrames >= cur_epoch*m_frames_per_epoch){
+            cout<<"End of epoch "<<cur_epoch<<endl;
+            cout<<"Starting evaluation"<<endl;
+            cur_epoch++;
+            evaluatePolicy(env);
+        }
 	}
 }
 
@@ -217,6 +234,7 @@ void DqnLearner::evaluatePolicy(Environment<Pixel> & env)
     double reward = 0, cumReward = 0, prevCumReward = 0;
 	struct timeval tvBegin, tvEnd, tvDiff;
 	double elapsedTime;
+    //m_solver->Restore("weight_temps_pong.wg.solverstate");
 
     vector<Pixel> current_frame;
     std::array<vector<Pixel>, m_numFramesPerInput> frame_buffer; //this is where the last frames seen are stored
@@ -269,7 +287,10 @@ void DqnLearner::evaluatePolicy(Environment<Pixel> & env)
 		env.reset();
 		prevCumReward = cumReward;
 	}
-    
+    std::ofstream outfile;
+
+    outfile.open("evaluations.txt", std::ios_base::app);
+    outfile << (double)cumReward/double(numEpisodesEval) <<endl ; 
 
 }
 
@@ -277,8 +298,8 @@ void DqnLearner::evaluatePolicy(Environment<Pixel> & env)
 void DqnLearner::updateTargetNet()
 {
     cout<<"restoring"<<endl;
-    m_solver->Snapshot("weight_snap.wg");
-    m_solver_hat->Restore("weight_snap.wg.solverstate");
+    m_solver->Snapshot("weight_temp_snap.wg");
+    m_solver_hat->Restore("weight_temp_snap.wg.solverstate");
 }
 
 void DqnLearner::miniBatchFeed(int t, int pos_in_batch)
@@ -330,8 +351,9 @@ void DqnLearner::miniBatchUncompressFrames(int t)
     }
 }
 
-void DqnLearner::miniBatchLearning()
+float DqnLearner::miniBatchLearning()
 {
+    float loss = 0;
     //cout<<m_replay_memory.num_stored<<endl;
     if(m_replay_memory.num_stored-1>m_batchSize){
         //cout<<"minibatch"<<endl;
@@ -401,7 +423,8 @@ void DqnLearner::miniBatchLearning()
         }
 
         //we do one step of computation
-        m_solver->Step(1);
+        loss+=m_solver->Step(1);
 
     }
+    return loss;
 }

@@ -79,6 +79,7 @@ protected:
     double m_epsilon_beginning,m_epsilon_end;
     int m_end_exploration;
     int m_SGDFrequency;
+    int m_frames_per_epoch;
     static constexpr int m_numFramesPerInput = 4;// this is the number of stacked frames given to the network as input
     static constexpr int m_imageDim = 84;
     static constexpr int m_batchSize = 32;
@@ -116,7 +117,7 @@ protected:
     void feedNet(std::array<std::vector<Pixel>, m_numFramesPerInput>& buffer, int current_buffer_index);
     void updateTargetNet();
     void updateQValues();
-    void miniBatchLearning();
+    float miniBatchLearning(); //returns the loss
     void miniBatchFeed(int t, int pos_in_batch);
     void miniBatchUncompressFrames(int t);
 };

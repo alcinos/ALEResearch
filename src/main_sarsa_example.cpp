@@ -57,7 +57,7 @@ int main(int argc, char** argv){
 	//ale.setFloat("frame_skip", param.getNumStepsPerAction());
     ale.setFloat("frame_skip",1);
 	ale.setInt("max_num_frames_per_episode", param.getEpisodeLength());
-
+    //ale.setBool("display_screen", true);
 	ale.loadROM(param.getRomPath().c_str());
 
     ale.act(PLAYER_A_NOOP);
