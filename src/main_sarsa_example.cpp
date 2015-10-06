@@ -19,7 +19,7 @@
 #include "agents/baseline/PerturbAgent.hpp"
 #include "agents/baseline/RandomAgent.hpp"
 #include "agents/human/HumanAgent.hpp"
-#include "features/RAMFeatures.hpp"
+#include "features/BasicFeatures.hpp"
 #include "environments/ale/ALEEnvironment.hpp"
 
 using namespace std;
@@ -43,7 +43,7 @@ int main(int argc, char** argv){
 	srand(param.getSeed());
 	
 	//Using Basic features:
-    RAMFeatures features(&param);
+    BasicFeatures features(&param);
 	//Reporting parameters read:
 	printBasicInfo(param);
 	
@@ -53,14 +53,14 @@ int main(int argc, char** argv){
 	ale.setInt("random_seed", param.getSeed());
 	ale.setFloat("frame_skip", param.getNumStepsPerAction());
 	ale.setInt("max_num_frames_per_episode", param.getEpisodeLength());
-
+    ale.setBool("display_screen",true);
 	ale.loadROM(param.getRomPath().c_str());
     std::string gameName=param.getRomPath().substr(param.getRomPath().find_last_of('/')+1);
     gameName = gameName.substr(0,gameName.find_last_of('.'));
     //std::copy(param.getRomPath().begin()+1+ param.getRomPath().find_last_of('/'),param.getRomPath().end(),gameName.begin());
     //ale.setDifficulty(param.getDifficultyLevel());
     //ale.setMode(param.getGameMode());
-    ALEEnvironment<RAMFeatures> env(&ale,&features);
+    ALEEnvironment<BasicFeatures> env(&ale,&features);
 
 	//Instantiating the learning algorithm:
 	SarsaSVD sarsaLearner(env,&param,ale.getAvailableModes().size()*ale.getAvailableDifficulties().size());

@@ -354,7 +354,7 @@ void SarsaSVD::learnPolicy(Environment<bool>& env){
             }
         }*/
         totalNumberFrames += env.getEpisodeFrameNumber();
-        if(rank<numFlavors && totalNumberFrames>(rank*2000000)){
+        if(rank<numFlavors && totalNumberFrames>(rank*200)){
             rankIncreaseNeeded = true;
             ror=rank;
             evaluatePolicy(env);

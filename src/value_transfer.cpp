@@ -20,6 +20,7 @@
 #include "agents/human/HumanAgent.hpp"
 #include "features/BasicFeatures.hpp"
 #include "environments/ale/ALEEnvironment.hpp"
+double curIter;
 
 using namespace std;
 void printBasicInfo(Parameters param){

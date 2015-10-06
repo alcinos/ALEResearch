@@ -214,9 +214,9 @@ class Parameters{
 		/**
 		* @param learningLength number of frames to be learned in total, e.g. 50,000,000 (DQN).
 		*/
-		void setLearningLength(int a);
 		
 	public:
+		void setLearningLength(int a);
 		/**
  		* Constructor receiving the information passed as arguments in the command line.
  		*

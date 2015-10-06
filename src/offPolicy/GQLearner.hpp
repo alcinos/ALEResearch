@@ -26,7 +26,11 @@ public:
     void showGreedyPol();
 public:
     std::vector<std::vector<float> > weights, aux_weights;
+private:
+    void updateQValues(std::vector<int> &Features, std::vector<float> &QValues);
+
     std::vector<std::unordered_map<unsigned,float> > e;
+    size_t maxFeatVectorNorm;
 };
 
 

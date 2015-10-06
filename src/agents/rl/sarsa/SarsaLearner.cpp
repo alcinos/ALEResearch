@@ -176,7 +176,7 @@ void SarsaLearner::learnPolicy(Environment<bool>& env, bool transfering,const st
 	struct timeval tvBegin, tvEnd, tvDiff;
     std::vector<double> reward;
 	double elapsedTime;
-	float cumReward = 0, prevCumReward = 0;
+	double cumReward = 0, prevCumReward = 0;
 	unsigned int maxFeatVectorNorm = 1;
 	sawFirstReward = 0; firstReward = 1.0;
     std::vector<float> bQ(numActions,0.0);               //Q(a) entries for behavior policy
@@ -260,11 +260,11 @@ void SarsaLearner::learnPolicy(Environment<bool>& env, bool transfering,const st
 			episode + 1, cumReward - prevCumReward, (double)cumReward/(episode + 1.0),
 			env.getEpisodeFrameNumber(), fps);
 		totalNumberFrames += env.getEpisodeFrameNumber();
-        if(totalNumberFrames > rr*2000000.0/double(numFlavors)){
+        /*        if(totalNumberFrames > rr*2000000.0/double(numFlavors)){
             double perf=evaluatePolicy(env);
             std::cout<<"rr "<<rr<<" frame "<<totalNumberFrames<<" perf "<<perf<<std::endl;
             rr++;
-        }
+            }*/
 		prevCumReward = cumReward;
 		env.reset();
 		if(toSaveWeightsAfterLearning && episode%saveWeightsEveryXSteps == 0 && episode > 0){

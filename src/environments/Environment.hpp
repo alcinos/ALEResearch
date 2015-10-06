@@ -104,7 +104,7 @@ public:
     }
 
 
-    virtual void setFlavor(unsigned f){};
+    virtual void setFlavor(unsigned f) = 0;
 protected:
     std::shared_ptr<OffPolicyLearner> m_offPolicyLearner;
 

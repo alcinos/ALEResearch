@@ -11,6 +11,10 @@
 #define OFFLEARN_H
 #include <vector>
 #include "../common/Parameters.hpp"
+#include "../common/Mathematics.hpp"
+
+template<typename T>
+class Environment;
 #include "ale_interface.hpp"
 class OffPolicyLearner
 {
@@ -28,12 +32,22 @@ public:
      */
     virtual void receiveSample(const std::vector<int>& features_current_state, Action action, float reward, const std::vector<int>& features_next_state, float proba_action_bpolicy) = 0;
     virtual void showGreedyPol() = 0;
+    double evaluatePolicy(Environment<bool>& env, unsigned numSteps, bool epsilonAnneal);
 
 protected:
+
+    int epsilonGreedy(std::vector<float>& QValues);
+    virtual void updateQValues(std::vector<int> &Features, std::vector<float> &QValues)=0;
+
     float gamma,epsilon,lambda, alpha, traceThreshold, beta;
     unsigned numActions, numFeatures;
     std::vector<Action> available_actions;
+    int randomActionTaken;
+    unsigned episodeLength,numEpisodesEval,totalNumberOfFramesToLearn ;
+
+
 };
 
+#include "../environments/Environment.hpp"
 
 #endif

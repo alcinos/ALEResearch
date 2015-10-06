@@ -11,7 +11,7 @@
 #include "features/GridFeatures.hpp"
 #include "offPolicy/GQLearner.hpp"
 
-
+double curIter;
 
 void printBasicInfo(Parameters param){
 	printf("Seed: %d\n", param.getSeed());

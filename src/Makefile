@@ -22,6 +22,7 @@ VALUE_TRANSFER_RELEARN := value_transfer_relearn
 OFFPOLICY_LEARN := offpolicy_learn
 ONPOLICY_LEARN := onpolicy_learn
 SVD := svd
+MC := mc
 # Search for library 'ale' and library 'z' when linking.
 LDFLAGS := -L$(ALE) -lale -lz -lm
 
@@ -37,7 +38,7 @@ SRCS = SarsaSVD.cpp Mathematics.cpp Parameters.cpp Timer.cpp Features.cpp Backgr
 OBJS = $(subst .cpp,.o, $(addprefix bin/,$(SRCS)))
 DEPS = $(subst .cpp,.d, $(addprefix bin/,$(SRCS))) bin/main_grid_example.d bin/main_offpolicy.d
 
-all: $(EXE) $(GETTER) $(VALUE_TRANSFER) $(VALUE_TRANSFER_RELEARN) $(OFFPOLICY_LEARN) $(SVD) $(ONPOLICY_LEARN)
+all: $(EXE) $(GETTER) $(VALUE_TRANSFER) $(VALUE_TRANSFER_RELEARN) $(OFFPOLICY_LEARN) $(SVD) $(ONPOLICY_LEARN) $(MC)
 
 $(EXE): $(OBJS) bin/main_sarsa_example.o
 	$(CXX) $(LDFLAGS) $(OBJS) bin/main_sarsa_example.o -o $(EXE)
@@ -47,6 +48,9 @@ $(GETTER):
 
 $(VALUE_TRANSFER): $(OBJS) bin/value_transfer.o
 	$(CXX) $(LDFLAGS) $(CFLAGS) $(OBJS) bin/value_transfer.o -o $(VALUE_TRANSFER)
+
+$(MC): $(OBJS) bin/main_mc.o
+	$(CXX) $(LDFLAGS) $(CFLAGS) $(OBJS) bin/main_mc.o -o $(MC)
 
 $(VALUE_TRANSFER_RELEARN): $(OBJS) bin/value_transfer_relearn.o
 	$(CXX) $(LDFLAGS) $(CFLAGS) $(OBJS) bin/value_transfer_relearn.o -o $(VALUE_TRANSFER_RELEARN)

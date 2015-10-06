@@ -49,10 +49,10 @@ int main(int argc, char** argv){
     auto diff = ale.getAvailableDifficulties();
     // ale.setDifficulty(diff[0]);
     // ale.setMode(modes[0]);
-    //ale.setDifficulty(param.getDifficultyLevel());
-    //ale.setMode(param.getGameMode());
-    ale.setDifficulty(1);
-    ale.setMode(3);
+    ale.setDifficulty(param.getDifficultyLevel());
+    ale.setMode(param.getGameMode());
+    //ale.setDifficulty(1);
+    //ale.setMode(3);
 
 	//Instantiating the learning algorithm:
 	SarsaLearner sarsaLearner(env,&param);

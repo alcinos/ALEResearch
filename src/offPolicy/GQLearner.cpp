@@ -9,11 +9,22 @@ GQLearner::GQLearner(unsigned numFeatures, const std::vector<Action>& actions, P
     maxFeatVectorNorm = 0;
 }
 
+void GQLearner::updateQValues(std::vector<int> &Features, std::vector<float> &QValues)
+{
+	for(int a = 0; a < numActions; a++){
+		float sumW = 0;
+		for(unsigned int i = 0; i < Features.size(); i++){
+			sumW += weights[a][Features[i]];
+		}
+		QValues[a] = sumW;
+    }
+}
 
-
+extern double curIter;
 void GQLearner::receiveSample(const std::vector<int>& features_current_state, Action A, float reward, const std::vector<int>& features_next_state, float proba_action_bpolicy)
 {
-    alpha = 0.001;
+    alpha = 0.01;
+    //alpha = pow(10,curIter);
     beta = 0;
     gamma = 0.99;
     lambda = 0.1;
